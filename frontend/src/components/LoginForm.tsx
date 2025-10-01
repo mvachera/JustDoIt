@@ -4,15 +4,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from "@/hooks/use-toast";
 
 interface LoginFormProps {
   onLoginSuccess: () => void;
+  onNavigateToRegister: () => void;
 }
 
-export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
+export default function LoginForm({ onLoginSuccess, onNavigateToRegister }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,14 +37,22 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         console.log('Connexion réussie!', data);
-		onLoginSuccess();
+		    onLoginSuccess();
       } else {
         console.error('Erreur de connexion:', data.error);
-        alert(data.error);
+        toast({
+          title: "Erreur de connexion !",
+          description: data.error,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Erreur réseau:', error);
-      alert('Erreur de connexion');
+      toast({
+        title: "Erreur réseau !",
+        description: "Serveur indisponible.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -93,10 +104,14 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
           
           <div className="mt-4 text-center text-sm">
             <span className="text-gray-600">Pas encore de compte ? </span>
-            <button className="text-blue-600 hover:underline">
+            <button 
+              type="button"
+              onClick={onNavigateToRegister}
+              className="text-blue-600 hover:underline"
+            >
               S'inscrire
             </button>
-          </div>
+        </div>
         </CardContent>
       </Card>
     </div>

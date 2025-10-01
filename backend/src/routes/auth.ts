@@ -15,7 +15,7 @@ router.post('/register', async (req, res) => {
     // Vérifie si l'utilisateur existe déjà
     const existingUser = await dbGet('SELECT * FROM users WHERE email = ?', [email]);
     if (existingUser) {
-      return res.status(400).json({ error: 'Utilisateur déjà existant' });
+      return res.status(400).json({ error: 'Utilisateur déjà existant.' });
     }
 
     // Hash le mot de passe
@@ -39,7 +39,7 @@ router.post('/register', async (req, res) => {
 
   } catch (error) {
     console.error('Erreur register:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Erreur serveur.' });
   }
 });
 
@@ -51,13 +51,13 @@ router.post('/login', async (req, res) => {
     // Trouve l'utilisateur
     const user = await dbGet('SELECT * FROM users WHERE email = ?', [email]) as User;
     if (!user) {
-      return res.status(400).json({ error: 'Utilisateur non trouvé' });
+      return res.status(400).json({ error: 'Utilisateur non trouvé.' });
     }
 
     // Vérifie le mot de passe
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      return res.status(400).json({ error: 'Mot de passe incorrect' });
+      return res.status(400).json({ error: 'Mot de passe incorrect.' });
     }
 
     // Crée le token JWT
@@ -69,7 +69,7 @@ router.post('/login', async (req, res) => {
 
   } catch (error) {
     console.error('Erreur login:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Erreur serveur.' });
   }
 });
 
