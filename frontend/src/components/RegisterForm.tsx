@@ -4,26 +4,28 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from "react-router-dom";
 
-
-interface RegisterFormProps {
-  onRegisterSuccess: () => void;
-  onBackToLogin: () => void;
-}
-
-export default function RegisterForm({ onRegisterSuccess, onBackToLogin }: RegisterFormProps) {
+export default function RegisterForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (password !== confirmPassword) {
-      alert('Les mots de passe ne correspondent pas');
+      toast({
+          title: "Erreur de connexion !",
+          description: 'Les mots de passe ne correspondent pas',
+          variant: "destructive",
+        });
       return;
     }
 
@@ -35,16 +37,15 @@ export default function RegisterForm({ onRegisterSuccess, onBackToLogin }: Regis
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, confirmPassword }),
       });
 
       const data = await response.json();
       
       if (response.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
         console.log('Inscription réussie!', data);
-        onRegisterSuccess();
+        login(data.token, data.user);
+        navigate("/");
       } else {
         console.error('Erreur d\'inscription:', data.error);
         toast({
@@ -139,7 +140,7 @@ export default function RegisterForm({ onRegisterSuccess, onBackToLogin }: Regis
             <span className="text-gray-600">Déjà un compte ? </span>
             <button 
               type="button"
-              onClick={onBackToLogin}
+              onClick={() => navigate("/login")}
               className="text-blue-600 hover:underline"
             >
               Se connecter

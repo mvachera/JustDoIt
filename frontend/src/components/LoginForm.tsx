@@ -5,17 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from "react-router-dom";
 
-interface LoginFormProps {
-  onLoginSuccess: () => void;
-  onNavigateToRegister: () => void;
-}
-
-export default function LoginForm({ onLoginSuccess, onNavigateToRegister }: LoginFormProps) {
+export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,11 +32,9 @@ export default function LoginForm({ onLoginSuccess, onNavigateToRegister }: Logi
       const data = await response.json();
       
       if (response.ok) {
-        // Stocke le token (tu peux utiliser localStorage ou un state manager)
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
         console.log('Connexion réussie!', data);
-		    onLoginSuccess();
+		    login(data.token, data.user);
+        navigate("/");
       } else {
         console.error('Erreur de connexion:', data.error);
         toast({
@@ -106,7 +103,7 @@ export default function LoginForm({ onLoginSuccess, onNavigateToRegister }: Logi
             <span className="text-gray-600">Pas encore de compte ? </span>
             <button 
               type="button"
-              onClick={onNavigateToRegister}
+              onClick={() => navigate("/register")}
               className="text-blue-600 hover:underline"
             >
               S'inscrire

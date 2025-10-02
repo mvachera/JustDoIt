@@ -1,8 +1,15 @@
-interface HomeProps {
-  onLogout: () => void;
-}
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth"
 
-export default function Home({ onLogout }: HomeProps) {
+export default function Home() {
+	const { logout } = useAuth();
+	const navigate = useNavigate();
+
+	const handleLogout = () => {
+    	logout();          // supprime token / user
+    	navigate("/login"); // redirige vers login
+	};
+
 	return (
 		<div className="min-h-screen bg-gray-50">
 		  <header className="bg-white shadow-sm border-b">
@@ -12,7 +19,7 @@ export default function Home({ onLogout }: HomeProps) {
 				  Habit Tracker
 				</h1>
 				<button 
-				  onClick={onLogout}
+				  onClick={handleLogout}
 				  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium"
 				>
 				  Se déconnecter

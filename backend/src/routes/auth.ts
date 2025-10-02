@@ -10,8 +10,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'ton-secret-temporaire';
 // Inscription
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, name }: CreateUserRequest = req.body;
+    const { email, password, confirmPassword, name }: CreateUserRequest = req.body;
 
+    // Vérifie que les mots de passe correspondent
+    if (password !== confirmPassword) {
+      return res.status(400).json({ error: 'Les mots de passe ne correspondent pas.' });
+    }
+    
     // Vérifie si l'utilisateur existe déjà
     const existingUser = await dbGet('SELECT * FROM users WHERE email = ?', [email]);
     if (existingUser) {
