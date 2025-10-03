@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from "react-router-dom";
 
 export default function LoginForm() {
@@ -30,11 +30,10 @@ export default function LoginForm() {
       });
 
       const data = await response.json();
-      
+      console.log(data);
       if (response.ok) {
         console.log('Connexion réussie!', data);
-		    login(data.token, data.user);
-        navigate("/");
+		    login(data.accessToken, data.refreshToken, data.user);
       } else {
         console.error('Erreur de connexion:', data.error);
         toast({
@@ -56,8 +55,8 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <Card className="w-full max-w-md">
+    <div className="flex items-center justify-center min-h-screen bg-gray-950">
+      <Card className="w-full max-w-md bg-white">
         <CardHeader>
           <CardTitle>Connexion</CardTitle>
           <CardDescription>

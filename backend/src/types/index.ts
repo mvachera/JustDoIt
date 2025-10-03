@@ -3,6 +3,7 @@ export interface User {
   email: string;
   password: string;
   name: string;
+  refreshToken?: string;
   created_at: string;
 }
 
@@ -21,6 +22,7 @@ export interface LoginRequest {
 
 // Types pour les réponses API
 export interface AuthResponse {
-  token: string;
+  accessToken: string;
+  refreshToken: string;
   user: Omit<User, 'password'>;
 }

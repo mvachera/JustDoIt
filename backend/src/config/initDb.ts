@@ -8,6 +8,7 @@ export function initDatabase(): void {
       email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       name TEXT NOT NULL,
+      refreshToken TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);

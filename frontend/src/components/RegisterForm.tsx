@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from "react-router-dom";
 
 export default function RegisterForm() {
@@ -41,11 +41,10 @@ export default function RegisterForm() {
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
         console.log('Inscription réussie!', data);
-        login(data.token, data.user);
-        navigate("/");
+        login(data.accessToken, data.refreshToken, data.user);
       } else {
         console.error('Erreur d\'inscription:', data.error);
         toast({
@@ -67,8 +66,8 @@ export default function RegisterForm() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <Card className="w-full max-w-md">
+    <div className="flex items-center justify-center min-h-screen bg-gray-950">
+      <Card className="w-full max-w-md bg-white">
         <CardHeader>
           <CardTitle>Inscription</CardTitle>
           <CardDescription>

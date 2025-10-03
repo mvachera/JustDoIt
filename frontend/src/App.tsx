@@ -4,7 +4,7 @@ import RegisterForm from './components/RegisterForm'
 import './App.css'
 import { Toaster } from "@/components/ui/toaster";
 import Home from './components/Home'
-import { useAuth } from "./hooks/useAuth";
+import { useAuth } from "./contexts/AuthContext";
 
 function App() {
   const { isLoggedIn } = useAuth();
