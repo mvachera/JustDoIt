@@ -17,9 +17,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const accessToken = localStorage.getItem("accessToken");
     const refreshToken = localStorage.getItem("refreshToken");
-    const user = localStorage.getItem("user");
 
-    if (accessToken && refreshToken && user) {
+    if (accessToken && refreshToken) {
     	setAccessToken(accessToken);
 		setIsLoggedIn(true);
     }
@@ -28,14 +27,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = (accessToken: string, refreshToken: string, user: any) => {
     localStorage.setItem("accessToken", accessToken);
     localStorage.setItem("refreshToken", refreshToken);
-    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem("name", user.name);
     setIsLoggedIn(true);
   };
 
   const logout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
-    localStorage.removeItem("user");
+    localStorage.removeItem("name");
 	setAccessToken(null);
     setIsLoggedIn(false);
   };
