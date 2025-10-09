@@ -20,6 +20,9 @@ export function initDatabase(): void {
       user_id INTEGER NOT NULL,
       name TEXT NOT NULL,
       description TEXT,
+      category TEXT NOT NULL CHECK(category IN
+      ('Sport', 'Détente', 'Apprentissage', 'Santé',
+      'Travail', 'Social')),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (id)
     )
