@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { initDatabase } from './config/initDb';
 import authRoutes from './routes/auth';
+import habitsRoutes from './routes/habits';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -18,6 +19,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/habits', habitsRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Habit Tracker API is running!' });

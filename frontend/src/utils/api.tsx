@@ -1,29 +1,29 @@
 const API_URL = 'http://localhost:5000';
 
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  let token = localStorage.getItem('token');
+  let accessToken = localStorage.getItem('accessToken');
   
   // Requête avec le token actuel
   let response = await fetch(`${API_URL}${url}`, {
     ...options,
     headers: {
       ...options.headers,
-      'Authorization': `Bearer ${token}`,
+      'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
   });
 
   // Si 401 ou 403, le token est expiré
   if (response.status === 401 || response.status === 403) {
-    const newToken = await refreshAccessToken();
-    
-    if (newToken) {
+    const refreshToken = await refreshAccessToken();
+
+    if (refreshToken) {
       // Réessaye avec le nouveau token
       response = await fetch(`${API_URL}${url}`, {
         ...options,
         headers: {
           ...options.headers,
-          'Authorization': `Bearer ${newToken}`,
+          'Authorization': `Bearer ${refreshToken}`,
           'Content-Type': 'application/json',
         },
       });

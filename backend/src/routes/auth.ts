@@ -10,6 +10,37 @@ const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'ton-secret-tem
 const ACCESS_TOKEN_EXPIRATION = "1h";
 const REFRESH_TOKEN_EXPIRATION = "7d";
 
+// Connexion
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password }: LoginRequest = req.body;
+
+    // Trouve l'utilisateur
+    const user = await dbGet('SELECT * FROM users WHERE email = ?', [email]) as User;
+    if (!user) {
+      return res.status(400).json({ error: 'Utilisateur non trouvé.' });
+    }
+
+    // Vérifie le mot de passe
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(400).json({ error: 'Mot de passe incorrect.' });
+    }
+
+    // Crée le token JWT
+    const accessToken = jwt.sign({ userId: user.id }, ACCESS_TOKEN_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRATION });
+    const refreshToken = jwt.sign({ userId: user.id }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRATION });
+
+    // Retourne sans le password
+    const { password: _, ...userWithoutPassword } = user;
+    res.json({ accessToken, refreshToken, user: userWithoutPassword } as AuthResponse);
+
+  } catch (error) {
+    console.error('Erreur login:', error);
+    res.status(500).json({ error: 'Erreur serveur.' });
+  }
+});
+
 // Inscription
 router.post('/register', async (req, res) => {
   try {
@@ -48,37 +79,6 @@ router.post('/register', async (req, res) => {
 
   } catch (error) {
     console.error('Erreur register:', error);
-    res.status(500).json({ error: 'Erreur serveur.' });
-  }
-});
-
-// Connexion
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password }: LoginRequest = req.body;
-
-    // Trouve l'utilisateur
-    const user = await dbGet('SELECT * FROM users WHERE email = ?', [email]) as User;
-    if (!user) {
-      return res.status(400).json({ error: 'Utilisateur non trouvé.' });
-    }
-
-    // Vérifie le mot de passe
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      return res.status(400).json({ error: 'Mot de passe incorrect.' });
-    }
-
-    // Crée le token JWT
-    const accessToken = jwt.sign({ userId: user.id }, ACCESS_TOKEN_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRATION });
-    const refreshToken = jwt.sign({ userId: user.id }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRATION });
-
-    // Retourne sans le password
-    const { password: _, ...userWithoutPassword } = user;
-    res.json({ accessToken, refreshToken, user: userWithoutPassword } as AuthResponse);
-
-  } catch (error) {
-    console.error('Erreur login:', error);
     res.status(500).json({ error: 'Erreur serveur.' });
   }
 });
