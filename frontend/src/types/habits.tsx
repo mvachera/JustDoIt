@@ -8,6 +8,7 @@ export interface Habit {
   category: HabitCategory;
   user_id: number;
   created_at: string;
+  completed_today: number;
 }
 
 export interface CategoryConfig {

@@ -12,9 +12,17 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
       return res.status(401).json({ error: 'Utilisateur non authentifié' });
     }
 
+    const today = new Date().toISOString().split('T')[0];
+
     const habits = await dbAll(
-      'SELECT * FROM habits WHERE user_id = ? ORDER BY created_at DESC',
-      [userId]
+      `SELECT 
+        h.*,
+        COALESCE(he.completed, 0) as completed_today
+       FROM habits h
+       LEFT JOIN habit_entries he ON h.id = he.habit_id AND he.date = ?
+       WHERE h.user_id = ?
+       ORDER BY h.created_at DESC`,
+      [today, userId]
     );
 
     res.json(habits);
@@ -77,6 +85,74 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res) => {
     res.json({ message: 'Habitude supprimée avec succès' });
   } catch (error) {
     console.error('Erreur suppression habitude:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// POST /api/habits/:id/toggle - Marquer/démarquer une habitude comme complétée pour aujourd'hui
+router.post('/:id/toggle', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "ID d'habitude manquant" });
+    }
+
+    const habitId = parseInt(id, 10);
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Utilisateur non authentifié' });
+    }
+
+    // Vérifie que l'habitude appartient à l'utilisateur
+    const habit = await dbGet(
+      'SELECT * FROM habits WHERE id = ? AND user_id = ?',
+      [habitId, userId]
+    );
+
+    if (!habit) {
+      return res.status(404).json({ error: 'Habitude non trouvée' });
+    }
+
+    const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+
+    // Vérifie si une entrée existe déjà pour aujourd'hui
+    const existingEntry = await dbGet(
+      'SELECT * FROM habit_entries WHERE habit_id = ? AND date = ?',
+      [habitId, today]
+    ) as { id: number, completed: number } | undefined;
+
+    if (existingEntry) {
+      // Si l'entrée existe, inverse le statut (toggle)
+      const newStatus = existingEntry.completed === 1 ? 0 : 1;
+      
+      await dbRun(
+        'UPDATE habit_entries SET completed = ? WHERE id = ?',
+        [newStatus, existingEntry.id]
+      );
+
+      res.json({ 
+        success: true, 
+        completed: newStatus === 1,
+        message: newStatus === 1 ? 'Habitude marquée comme complétée' : 'Habitude marquée comme non complétée'
+      });
+    } else {
+      // Si aucune entrée n'existe, crée-la avec completed = 1
+      await dbRun(
+        'INSERT INTO habit_entries (habit_id, date, completed) VALUES (?, ?, 1)',
+        [habitId, today]
+      );
+
+      res.json({ 
+        success: true, 
+        completed: true,
+        message: 'Habitude marquée comme complétée'
+      });
+    }
+
+  } catch (error) {
+    console.error('Erreur toggle habitude:', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });

@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import HabitCard from '../components/HabitCard';
 import HabitFormModal from '../components/HabitForm';
@@ -8,6 +8,10 @@ import { useHabits } from '../hooks/useHabits';
 export default function Habits() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { habits, isLoading, fetchHabits, deleteHabit, toggleHabit } = useHabits();
+
+  useEffect(() => {
+    fetchHabits();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-950">

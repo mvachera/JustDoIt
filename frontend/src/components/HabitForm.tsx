@@ -128,7 +128,7 @@ export default function HabitForm({ isOpen, onClose, onSuccess }: HabitFormProps
               type="button"
               onClick={onClose}
               className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600
-			  	text-white rounded-lg transition"
+			  	    text-white rounded-lg transition"
             >
               Annuler
             </button>
@@ -136,8 +136,8 @@ export default function HabitForm({ isOpen, onClose, onSuccess }: HabitFormProps
               type="submit"
               disabled={!formData.name.trim() || isLoading}
               className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700
-			  	text-white rounded-lg transition disabled:opacity-50
-				disabled:cursor-not-allowed"
+			  	    text-white rounded-lg transition disabled:opacity-50
+				        disabled:cursor-not-allowed"
             >
               {isLoading ? 'Création...' : 'Créer'}
             </button>

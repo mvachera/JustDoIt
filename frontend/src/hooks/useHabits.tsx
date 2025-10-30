@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { fetchWithAuth } from '../utils/api';
 import { useToast } from './use-toast';
 import { Habit } from '../types/habits';
@@ -64,18 +64,39 @@ export function useHabits() {
     }
   };
 
-  const toggleHabit = (id: number) => {
-    // TODO: Appel API pour marquer l'habitude comme complétée
-    console.log('Toggle habit:', id);
-    toast({
-      title: "Fonctionnalité à venir",
-      description: "Le marquage des habitudes sera bientôt disponible",
+  const toggleHabit = async (id: number) => {
+  try {
+    const response = await fetchWithAuth(`/api/habits/${id}/toggle`, {
+      method: 'POST',
     });
-  };
 
-  useEffect(() => {
-    fetchHabits();
-  }, []);
+    if (response.ok) {
+      const data = await response.json();
+      toast({
+        title: data.completed ? "Habitude complétée ✓" : "Habitude annulée",
+        description: data.completed 
+          ? "Bien joué ! Continue comme ça 🎉" 
+          : "Marqué comme non complété",
+      });
+      
+      // Recharge les habitudes pour mettre à jour l'affichage
+      fetchHabits();
+    } else {
+      const error = await response.json();
+      toast({
+        title: "Erreur",
+        description: error.error || 'Erreur lors du marquage',
+        variant: "destructive",
+      });
+    }
+  } catch (error) {
+    toast({
+      title: "Erreur réseau",
+      description: "Impossible de se connecter au serveur",
+      variant: "destructive",
+      });
+    }
+  };
 
   return {
     habits,

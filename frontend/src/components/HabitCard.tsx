@@ -30,9 +30,18 @@ export default function HabitCard({ habit, onToggle, onDelete }: HabitCardProps)
         <p className="text-gray-400 text-sm">{habit.description || 'Pas de description'}</p>
         <button
           onClick={() => onToggle(habit.id)}
-          className="p-2 rounded-lg transition bg-gray-700 hover:bg-gray-600"
+          className={`p-2 rounded-lg transition ${
+            habit.completed_today === 1
+            ? 'bg-green-600 hover:bg-green-700'
+            : 'bg-gray-700 hover:bg-gray-600'
+          }`}
+          title={habit.completed_today === 1 ? 'Habitude complétée' : 'Marquer comme complétée'}
         >
-          <CheckCircle2 className="w-5 h-5 text-gray-400" />
+          <CheckCircle2
+            className={`w-5 h-5 ${
+              habit.completed_today === 1 ? 'text-white' : 'text-gray-400'
+            }`}
+          />
         </button>
       </div>
       

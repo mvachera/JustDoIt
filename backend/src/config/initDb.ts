@@ -13,7 +13,7 @@ export function initDatabase(): void {
     )
   `);
 
-    // Table des habitudes
+  // Table des habitudes
   db.run(`
     CREATE TABLE IF NOT EXISTS habits (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
