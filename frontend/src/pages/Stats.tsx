@@ -36,23 +36,23 @@ export default function Stats() {
   });
   const [isLoading, setIsLoading] = useState(true);
 
-//   useEffect(() => {
-//     const fetchStats = async () => {
-//       try {
-//         const response = await fetchWithAuth('/api/stats', { method: 'GET' });
-//         if (response.ok) {
-//           const data = await response.json();
-//           setStats(data);
-//         }
-//       } catch (error) {
-//         console.error('Erreur:', error);
-//       } finally {
-//         setIsLoading(false);
-//       }
-//     };
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetchWithAuth('/api/stats', { method: 'GET' });
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-//     fetchStats();
-//   }, []);
+    fetchStats();
+  }, []);
 
   if (isLoading) {
     return (
