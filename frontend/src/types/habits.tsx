@@ -9,6 +9,8 @@ export interface Habit {
   user_id: number;
   created_at: string;
   completed_today: number;
+  weekData: boolean[];
+  streak: number;
 }
 
 export interface CategoryConfig {

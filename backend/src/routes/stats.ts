@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { dbGet, dbAll } from '../config/database';
+import { calculateStreak, getLast7Days } from '../utils/dateHelpers';
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
       return res.status(401).json({ error: 'Utilisateur non authentifié' });
     }
 
-    const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    const today = new Date().toISOString().split('T')[0];
 
     // 1. Nombre total d'habitudes actives
     const totalHabitsResult = await dbGet(
@@ -52,11 +53,33 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
       ? (completedToday / totalHabits) * 100 
       : 0;
 
+    // 5. NOUVEAU : Données hebdomadaires (nombre d'habitudes complétées par jour)
+    const weekDates = getLast7Days();
+    
+    const weeklyData = await Promise.all(
+      weekDates.map(async (date: string) => {
+        const result = await dbGet(
+          `SELECT COUNT(*) as count 
+           FROM habit_entries he
+           JOIN habits h ON he.habit_id = h.id
+           WHERE h.user_id = ? AND he.date = ? AND he.completed = 1`,
+          [userId, date]
+        ) as { count: number };
+        
+        return {
+          date,
+          completed: result.count,
+          total: totalHabits
+        };
+      })
+    );
+
     res.json({
       totalHabits,
       completedToday,
       longestStreak,
       successRate: Math.round(successRate),
+      weeklyData,
     });
 
   } catch (error) {
@@ -64,38 +87,5 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
-
-// Fonction helper pour calculer la série (streak) d'une habitude
-async function calculateStreak(habitId: number): Promise<number> {
-  const entries = (await dbAll(
-    'SELECT date FROM habit_entries WHERE habit_id = ? AND completed = 1 ORDER BY date DESC',
-    [habitId]
-  ) ?? []) as { date: string }[];
-
-  if (!entries.length) return 0;
-
-  let streak = 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  for (let i = 0; i < entries.length; i++) {
-    const entryDateStr = entries[i]?.date;
-    if (!entryDateStr) break;
-
-    const entryDate = new Date(entryDateStr);
-    entryDate.setHours(0, 0, 0, 0);
-
-    const expectedDate = new Date(today);
-    expectedDate.setDate(today.getDate() - i);
-
-    if (entryDate.getTime() === expectedDate.getTime()) {
-      streak++;
-    } else {
-      break;
-    }
-  }
-
-  return streak;
-}
 
 export default router;

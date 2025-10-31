@@ -1,6 +1,7 @@
 import express from 'express';
 import { dbRun, dbGet, dbAll } from '../config/database';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { calculateStreak, getLast7Days } from '../utils/dateHelpers';
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
 
     const today = new Date().toISOString().split('T')[0];
 
+    // Récupère les habitudes
     const habits = await dbAll(
       `SELECT 
         h.*,
@@ -25,7 +27,40 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
       [today, userId]
     );
 
-    res.json(habits);
+    // Pour chaque habitude, récupère les données de la semaine
+    const habitsWithWeekData = await Promise.all(
+      habits.map(async (habit) => {
+        // Génère les 7 derniers jours (lundi à dimanche de cette semaine)
+        const weekDates = getLast7Days();
+        
+        // Récupère les entrées pour ces 7 jours
+        const entries = await dbAll(
+          `SELECT date, completed 
+           FROM habit_entries 
+           WHERE habit_id = ? AND date IN (${weekDates.map(() => '?').join(',')})`,
+          [habit.id, ...weekDates]
+        ) as { date: string; completed: number }[];
+
+        // Crée un map pour accès rapide
+        const entriesMap = new Map(
+          entries.map(e => [e.date, e.completed === 1])
+        );
+
+        // Construit le tableau de la semaine
+        const weekData = weekDates.map(date => entriesMap.get(date) || false);
+
+        // Calcule le streak
+        const streak = await calculateStreak(habit.id);
+
+        return {
+          ...habit,
+          weekData,
+          streak
+        };
+      })
+    );
+
+    res.json(habitsWithWeekData);
   } catch (error) {
     console.error('Erreur récupération habitudes:', error);
     res.status(500).json({ error: 'Erreur serveur' });
@@ -39,6 +74,18 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
 
     if (!userId) {
       return res.status(401).json({ error: 'Utilisateur non authentifié' });
+    }
+
+    // Vérifie la limite
+    const result = await dbGet(
+      'SELECT COUNT(*) as count FROM habits WHERE user_id = ?',
+      [userId]
+    ) as { count: number };
+
+    if (result.count >= 5) {
+      return res.status(400).json({ 
+        error: 'Limite atteinte. Vous avez déjà 5 habitudes. Supprimez-en une pour en créer une nouvelle.' 
+      });
     }
 
     await dbRun(
