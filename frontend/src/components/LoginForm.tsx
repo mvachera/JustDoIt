@@ -29,7 +29,6 @@ export default function LoginForm() {
       });
 
       const data = await response.json();
-      console.log(data);
       if (response.ok) {
         console.log('Connexion réussie!', data);
 		    login(data.accessToken, data.refreshToken, data.user);

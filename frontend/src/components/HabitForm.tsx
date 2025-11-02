@@ -1,8 +1,7 @@
 import { X } from 'lucide-react';
 import { useState } from 'react';
-import { fetchWithAuth } from '../utils/api';
-import { useToast } from '@/hooks/use-toast';
-import { CATEGORIES, HabitCategory } from '../types/habits';
+import { CATEGORIES, HabitCategory, DIFFICULTY, HabitDifficulty } from '../types/habits';
+import { useHabits } from '../hooks/useHabits';
 
 interface HabitFormProps {
   isOpen: boolean;
@@ -15,46 +14,25 @@ export default function HabitForm({ isOpen, onClose, onSuccess }: HabitFormProps
     name: '',
     description: '',
     category: 'Sport' as HabitCategory,
+    difficulty: 'easy' as HabitDifficulty,
   });
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const { createHabit } = useHabits();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  e.preventDefault();
+  setIsLoading(true);
 
-    try {
-      const response = await fetchWithAuth('/api/habits', {
-        method: 'POST',
-        body: JSON.stringify(formData),
-      });
+  const success = await createHabit(formData);
 
-      if (response.ok) {
-        toast({
-          title: "Habitude créée !",
-          description: `${formData.name} a été ajoutée à vos habitudes.`,
-        });
-        setFormData({ name: '', description: '', category: 'Sport' });
-        onSuccess();
-        onClose();
-      } else {
-        const error = await response.json();
-        toast({
-          title: "Erreur",
-          description: error.error || 'Erreur lors de la création',
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Erreur réseau",
-        description: "Impossible de se connecter au serveur",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (success) {
+    setFormData({ name: '', description: '', category: 'Sport', difficulty: 'easy' });
+    onSuccess();
+    onClose();
+  }
+
+  setIsLoading(false);
+};
 
   if (!isOpen) return null;
 
@@ -79,8 +57,8 @@ export default function HabitForm({ isOpen, onClose, onSuccess }: HabitFormProps
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Ex: Méditation, Sport..."
               className="w-full px-4 py-2 bg-gray-700 border border-gray-600
-			  	rounded-lg text-white placeholder-gray-400 focus:outline-none
-				focus:border-purple-500"
+                rounded-lg text-white placeholder-gray-400 focus:outline-none
+                focus:border-purple-500"
               required
             />
           </div>
@@ -95,8 +73,8 @@ export default function HabitForm({ isOpen, onClose, onSuccess }: HabitFormProps
               placeholder="Ex: 10 minutes par jour"
               rows={3}
               className="w-full px-4 py-2 bg-gray-700 border border-gray-600
-			  	rounded-lg text-white placeholder-gray-400 focus:outline-none
-				focus:border-purple-500 resize-none"
+                rounded-lg text-white placeholder-gray-400 focus:outline-none
+                focus:border-purple-500 resize-none"
             />
           </div>
 
@@ -123,12 +101,36 @@ export default function HabitForm({ isOpen, onClose, onSuccess }: HabitFormProps
             </div>
           </div>
 
+          {/* NOUVEAU : Difficulté */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Difficulté
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {DIFFICULTY.map((diff) => (
+                <button
+                  key={diff.value}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, difficulty: diff.value })}
+                  className={`p-3 rounded-lg border-2 transition ${
+                    formData.difficulty === diff.value
+                      ? 'border-purple-500 bg-gray-700'
+                      : 'border-gray-600 bg-gray-700 hover:border-gray-500'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">{diff.icon}</div>
+                  <span className="text-xs text-white">{diff.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex space-x-3 pt-4">
             <button
               type="button"
               onClick={onClose}
               className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600
-			  	    text-white rounded-lg transition"
+                text-white rounded-lg transition"
             >
               Annuler
             </button>
@@ -136,8 +138,8 @@ export default function HabitForm({ isOpen, onClose, onSuccess }: HabitFormProps
               type="submit"
               disabled={!formData.name.trim() || isLoading}
               className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700
-			  	    text-white rounded-lg transition disabled:opacity-50
-				        disabled:cursor-not-allowed"
+                text-white rounded-lg transition disabled:opacity-50
+                disabled:cursor-not-allowed"
             >
               {isLoading ? 'Création...' : 'Créer'}
             </button>

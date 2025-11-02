@@ -23,6 +23,9 @@ export function initDatabase(): void {
       category TEXT NOT NULL CHECK(category IN
       ('Sport', 'Détente', 'Apprentissage', 'Santé',
       'Travail', 'Social')),
+      difficulty TEXT NOT NULL CHECK(difficulty IN
+      ('easy', 'medium', 'hard')),
+      best_streak INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (id)
     )

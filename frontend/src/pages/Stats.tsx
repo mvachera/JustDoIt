@@ -171,7 +171,7 @@ export default function Stats() {
         </div>
 
         {/* Résumé de la semaine - MODIFIÉ */}
-        <div className="mt-8 bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <div className="mt-8 bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition">
           <h3 className="text-lg font-semibold text-white mb-4">Cette semaine</h3>
           <div className="grid grid-cols-7 gap-2">
             {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day, i) => {
