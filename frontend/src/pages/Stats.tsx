@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, TrendingUp, Target, Award, Flame } from 'lucide-react';
+import { Calendar, TrendingUp, Target, Award, Flame, BarChart3 } from 'lucide-react';
 import Header from '../components/Header';
 import { fetchWithAuth } from '../utils/api';
 import { ComponentType } from 'react';
@@ -13,9 +13,14 @@ interface WeeklyDataItem {
 interface StatsData {
   totalHabits: number;
   completedToday: number;
+  totalCompletedThisWeek: number;
+  averagePerDay: number;
   longestStreak: number;
+  longestStreakName: string;
   successRate: number;
   weeklyData: WeeklyDataItem[];
+  bestHabit?: { name: string; rate: number };
+  worstHabit?: { name: string; rate: number };
 }
 
 interface StatsCardProps {
@@ -47,7 +52,10 @@ export default function Stats() {
   const [stats, setStats] = useState<StatsData>({
     totalHabits: 0,
     completedToday: 0,
+    totalCompletedThisWeek: 0,
+    averagePerDay: 0,
     longestStreak: 0,
+    longestStreakName: "",
     successRate: 0,
     weeklyData: [],
   });
@@ -83,6 +91,7 @@ export default function Stats() {
   }
 
   const getMotivationMessage = (rate: number) => {
+    if (rate === 0) return '😅 Pas encore commencé !';
     if (rate >= 80) return '🔥 Excellent !';
     if (rate >= 60) return '👍 Très bien';
     return '💪 Continue !';
@@ -144,15 +153,23 @@ export default function Stats() {
           {/* Plus longue série avec flamme */}
           <StatsCard
             icon={TrendingUp}
-            title="Plus longue série"
-            value={`${stats.longestStreak} jours`}
+            title={`Plus longue série en cours : ${stats.longestStreakName || "Inconnue"}`}
+            value={
+              stats.longestStreak > 0
+                ? `${stats.longestStreak} jours`
+                : "Aucune série en cours"
+            }
             color="bg-green-600"
           >
-            {stats.longestStreak > 0 && (
+            {stats.longestStreak > 0 ? (
               <div className="flex items-center gap-1 mt-2">
                 <Flame className="w-4 h-4 text-orange-400" />
                 <p className="text-xs text-gray-500">Record de consécutivité</p>
               </div>
+            ) : (
+              <p className="text-xs text-gray-500 mt-2">
+                Aucune habitude n’a encore de série active.
+              </p>
             )}
           </StatsCard>
 
@@ -168,11 +185,41 @@ export default function Stats() {
             </p>
             <p className="text-xs text-gray-500 mt-1">Basé sur aujourd'hui</p>
           </StatsCard>
+
+          {/* Habitude la plus régulière / la moins régulière */}
+          <StatsCard
+            icon={BarChart3}
+            title="Régularité des habitudes de cette semaine"
+            value=""
+            color="bg-pink-600"
+          >
+            {stats.bestHabit && stats.worstHabit ? (
+              <div className="mt-2 space-y-2">
+                <p className="text-sm text-gray-300">
+                  <span className="text-green-400 font-semibold">✔️ Tu es le plus constant dans :</span>{' '}
+                  <span className="font-medium text-white">{stats.bestHabit.name}</span>{' '}
+                  ({stats.bestHabit.rate}%)
+                </p>
+                <p className="text-sm text-gray-300">
+                  <span className="text-red-400 font-semibold">⚠️ À améliorer :</span>{' '}
+                  <span className="font-medium text-white">{stats.worstHabit.name}</span>{' '}
+                  ({stats.worstHabit.rate}%)
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 mt-2">
+                Aucune donnée encore disponible.
+              </p>
+            )}
+          </StatsCard>
         </div>
 
-        {/* Résumé de la semaine - MODIFIÉ */}
+        {/* Résumé de la semaine */}
         <div className="mt-8 bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition">
-          <h3 className="text-lg font-semibold text-white mb-4">Cette semaine</h3>
+          <div className='flex justify-between mb-4'>
+            <h3 className="text-lg font-semibold text-white">Cette semaine</h3>
+            <span className='text-gray-500'>Habitude complétée : {stats.totalCompletedThisWeek}/35</span>
+          </div>
           <div className="grid grid-cols-7 gap-2">
             {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day, i) => {
               const dayData = stats.weeklyData?.[i];
@@ -180,24 +227,36 @@ export default function Stats() {
               const adjustedToday = today === 0 ? 6 : today - 1;
               const isToday = i === adjustedToday;
 
+              let bgColor = 'bg-gray-700';
+              const completed = dayData?.completed || 0;
+
+              if (completed === 1) bgColor = 'bg-purple-300';
+              else if (completed === 2) bgColor = 'bg-purple-400';
+              else if (completed === 3) bgColor = 'bg-purple-500';
+              else if (completed === 4) bgColor = 'bg-purple-600';
+              else if (completed >= 5) bgColor = 'bg-purple-800';
+
               return (
                 <div key={i} className="text-center">
-                  <p className={`text-xs mb-2 ${isToday ? 'text-purple-400 font-bold' : 'text-gray-500'}`}>
+                  <p
+                    className={`text-xs mb-2 ${
+                      isToday ? 'text-purple-400 font-bold' : 'text-gray-500'
+                    }`}
+                  >
                     {day}
                   </p>
-                  <div className={`w-full aspect-square rounded-lg flex items-center justify-center ${
-                    dayData && dayData.completed > 0 ? 'bg-purple-600' : 'bg-gray-700'
-                  }`}>
-                    <span className="text-sm font-bold text-white">
-                      {dayData ? `${dayData.completed}/${dayData.total}` : '-'}
-                    </span>
-                  </div>
+                  <div
+                    className={`w-full aspect-square rounded-lg flex items-center justify-center transition-all duration-300 ${bgColor} ${
+                      isToday ? 'ring-2 ring-purple-400' : ''
+                    }`}
+                  />
                 </div>
               );
             })}
           </div>
+
           <p className="text-xs text-gray-500 mt-4 text-center">
-            Nombre d'habitudes complétées par jour
+            Nombre d'habitudes complétées en moyenne par jour : {stats.averagePerDay}
           </p>
         </div>
       </div>
