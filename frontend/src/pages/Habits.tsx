@@ -4,28 +4,30 @@ import Header from '../components/Header';
 import HabitCard from '../components/HabitCard';
 import HabitFormModal from '../components/HabitForm';
 import { useHabits } from '../hooks/useHabits';
-import { HabitCategory, HabitDifficulty, CATEGORIES } from '../types/habits';
+import { CATEGORIES, Habit } from '../types/habits';
 
 export default function Habits() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<Habit | undefined>(undefined);
   const [selectedCategory, setSelectedCategory] = useState<string>('Toutes');
-  const { habits, isLoading, getHabits, updateHabit, deleteHabit, toggleHabit, toggleAllHabits } = useHabits();
+  const { habits, isLoading, getHabits, deleteHabit, toggleHabit, toggleAllHabits } = useHabits();
 
   useEffect(() => {
     getHabits();
   }, []);
 
-  // const editHabit = async (id: number, updatedData: { 
-  //   name?: string; 
-  //   description?: string; 
-  //   category?: HabitCategory; 
-  //   difficulty?: HabitDifficulty; 
-  // }) => {
-  //   await updateHabit(id, updatedData);
-  // };
+  // Ouvre le modal d'édition
+  const handleEditHabit = (habit: Habit) => {
+    setEditingHabit(habit);
+    setIsModalOpen(true);
+  };
 
+  // Ferme le modal
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingHabit(undefined);
+  };
 
-  // Filtrer les habitudes selon la catégorie sélectionnée
   const filteredHabits = selectedCategory === 'Toutes'
     ? habits
     : habits.filter(h => h.category === selectedCategory);
@@ -57,7 +59,6 @@ export default function Habits() {
           </div>
         </div>
 
-        {/* Filtres par catégorie */}
         {habits.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-6">
             <button
@@ -130,6 +131,7 @@ export default function Habits() {
                 habit={habit}
                 onToggle={toggleHabit}
                 onDelete={deleteHabit}
+                onEdit={handleEditHabit}
               />
             ))}
           </div>
@@ -138,8 +140,9 @@ export default function Habits() {
 
       <HabitFormModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
         onSuccess={getHabits}
+        editHabit={editingHabit}
       />
     </div>
   );

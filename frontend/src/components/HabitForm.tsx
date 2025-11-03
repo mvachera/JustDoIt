@@ -1,15 +1,16 @@
 import { X } from 'lucide-react';
-import { useState } from 'react';
-import { CATEGORIES, HabitCategory, DIFFICULTY, HabitDifficulty } from '../types/habits';
+import { useState, useEffect } from 'react';
+import { CATEGORIES, HabitCategory, DIFFICULTY, HabitDifficulty, Habit } from '../types/habits';
 import { useHabits } from '../hooks/useHabits';
 
 interface HabitFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  editHabit?: Habit;
 }
 
-export default function HabitForm({ isOpen, onClose, onSuccess }: HabitFormProps) {
+export default function HabitForm({ isOpen, onClose, onSuccess, editHabit }: HabitFormProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -17,22 +18,43 @@ export default function HabitForm({ isOpen, onClose, onSuccess }: HabitFormProps
     difficulty: 'easy' as HabitDifficulty,
   });
   const [isLoading, setIsLoading] = useState(false);
-  const { createHabit } = useHabits();
+  const { createHabit, updateHabit } = useHabits();
+
+  // Pré-remplis le formulaire si on édite
+  useEffect(() => {
+    if (editHabit) {
+      setFormData({
+        name: editHabit.name,
+        description: editHabit.description || '',
+        category: editHabit.category,
+        difficulty: editHabit.difficulty,
+      });
+    } else {
+      // Reset si création
+      setFormData({ name: '', description: '', category: 'Sport', difficulty: 'easy' });
+    }
+  }, [editHabit, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
+    e.preventDefault();
+    setIsLoading(true);
 
-  const success = await createHabit(formData);
+    let success = false;
 
-  if (success) {
-    setFormData({ name: '', description: '', category: 'Sport', difficulty: 'easy' });
-    onSuccess();
-    onClose();
-  }
+    if (editHabit) {
+      success = await updateHabit(editHabit.id, formData);
+    } else {
+      success = await createHabit(formData);
+    }
 
-  setIsLoading(false);
-};
+    if (success) {
+      setFormData({ name: '', description: '', category: 'Sport', difficulty: 'easy' });
+      onSuccess();
+      onClose();
+    }
+
+    setIsLoading(false);
+  };
 
   if (!isOpen) return null;
 
@@ -40,7 +62,9 @@ export default function HabitForm({ isOpen, onClose, onSuccess }: HabitFormProps
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-800 rounded-xl max-w-md w-full p-6 border border-gray-700">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">Nouvelle habitude</h2>
+          <h2 className="text-2xl font-bold text-white">
+            {editHabit ? 'Modifier l\'habitude' : 'Nouvelle habitude'}
+          </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white transition">
             <X className="w-6 h-6" />
           </button>
@@ -101,7 +125,7 @@ export default function HabitForm({ isOpen, onClose, onSuccess }: HabitFormProps
             </div>
           </div>
 
-          {/* NOUVEAU : Difficulté */}
+          {/* Difficulté */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Difficulté
@@ -141,7 +165,9 @@ export default function HabitForm({ isOpen, onClose, onSuccess }: HabitFormProps
                 text-white rounded-lg transition disabled:opacity-50
                 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Création...' : 'Créer'}
+              {isLoading 
+                ? (editHabit ? 'Modification...' : 'Création...') 
+                : (editHabit ? 'Modifier' : 'Créer')}
             </button>
           </div>
         </form>

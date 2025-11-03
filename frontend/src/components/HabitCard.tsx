@@ -1,16 +1,16 @@
-import { Calendar, CheckCircle2, Trash2, Flame } from 'lucide-react';
+import { Calendar, CheckCircle2, Trash2, Flame, Pencil } from 'lucide-react';
 import { Habit, CATEGORIES, DIFFICULTY } from '../types/habits';
-import { Pencil } from 'lucide-react';
 
 interface HabitCardProps {
   habit: Habit;
   onToggle: (id: number) => void;
   onDelete: (id: number) => void;
+  onEdit: (habit: Habit) => void;
 }
 
 const DAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
-export default function HabitCard({ habit, onToggle, onDelete }: HabitCardProps) {
+export default function HabitCard({ habit, onToggle, onDelete, onEdit }: HabitCardProps) {
   const categoryColor = CATEGORIES.find(c => c.name === habit.category)?.color || 'bg-gray-500';
   
   // Calcul du pourcentage de complétion de la semaine
@@ -44,7 +44,7 @@ export default function HabitCard({ habit, onToggle, onDelete }: HabitCardProps)
           </button>
 
           <button
-            // onClick={handleEdit}
+            onClick={() => onEdit(habit)}
             className="p-2 hover:bg-blue-500/10 rounded-lg transition"
             title="Modifier cette habitude"
           >
