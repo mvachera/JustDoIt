@@ -1,83 +1,10 @@
-import { useState, useEffect } from 'react';
 import { Calendar, TrendingUp, Target, Award, Flame, BarChart3 } from 'lucide-react';
 import Header from '../components/Header';
-import { fetchWithAuth } from '../utils/api';
-import { ComponentType } from 'react';
-
-interface WeeklyDataItem {
-  date: string;
-  completed: number;
-  total: number;
-}
-
-interface StatsData {
-  totalHabits: number;
-  completedToday: number;
-  totalCompletedThisWeek: number;
-  averagePerDay: number;
-  longestStreak: number;
-  longestStreakName: string;
-  successRate: number;
-  weeklyData: WeeklyDataItem[];
-  bestHabit?: { name: string; rate: number };
-  worstHabit?: { name: string; rate: number };
-}
-
-interface StatsCardProps {
-  icon: ComponentType<any>;
-  title: string;
-  value: string | number;
-  color: string;
-  children?: React.ReactNode;
-}
-
-function StatsCard({ icon: Icon, title, value, color, children }: StatsCardProps) {
-  return (
-    <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <p className="text-gray-400 text-sm mb-1">{title}</p>
-          <p className="text-3xl font-bold text-white">{value}</p>
-          {children}
-        </div>
-        <div className={`p-3 rounded-lg ${color} ml-4`}>
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-      </div>
-    </div>
-  );
-}
+import StatsCard from '../components/StatsCard';
+import { useStats } from '../hooks/useStats';
 
 export default function Stats() {
-  const [stats, setStats] = useState<StatsData>({
-    totalHabits: 0,
-    completedToday: 0,
-    totalCompletedThisWeek: 0,
-    averagePerDay: 0,
-    longestStreak: 0,
-    longestStreakName: "",
-    successRate: 0,
-    weeklyData: [],
-  });
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetchWithAuth('/api/stats', { method: 'GET' });
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
-        }
-      } catch (error) {
-        console.error('Erreur:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
+  const { stats, isLoading, error } = useStats();
 
   if (isLoading) {
     return (
@@ -90,7 +17,18 @@ export default function Stats() {
     );
   }
 
-  const getMotivationMessage = (rate: number) => {
+  if (error) {
+    return (
+      <div className="min-h-screen bg-black">
+        <Header />
+        <div className="text-center pt-24 text-red-400">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  const getMotivationMessage = (rate: number): string => {
     if (rate === 0) return '😅 Pas encore commencé !';
     if (rate >= 80) return '🔥 Excellent !';
     if (rate >= 60) return '👍 Très bien';
@@ -168,7 +106,7 @@ export default function Stats() {
               </div>
             ) : (
               <p className="text-xs text-gray-500 mt-2">
-                Aucune habitude n’a encore de série active.
+                Aucune habitude n'a encore de série active.
               </p>
             )}
           </StatsCard>

@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { dbGet, dbAll } from '../config/database';
-import { calculateStreak, getLast7Days } from '../utils/dateHelpers';
+import { calculateStreak, getLast7Days, getWeekDaysUntilToday } from '../utils/dateHelpers';
 
 const router = express.Router();
 
@@ -77,52 +77,45 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
     );
 
     // 6. Habitude la plus régulière / la moins régulière (cette semaine)
+    const weekDatesUntilToday = getWeekDaysUntilToday();
+    const totalDaysElapsed = weekDatesUntilToday.length;
+    
     const habitRates = await Promise.all(
       habits.map(async (habit) => {
-        const totalEntries = await dbGet(
-          `SELECT COUNT(*) as count 
-           FROM habit_entries 
-           WHERE habit_id = ? AND date IN (${weekDates.map(() => '?').join(',')})`,
-          [habit.id, ...weekDates]
-        ) as { count: number };
-      
         const completedEntries = await dbGet(
           `SELECT COUNT(*) as count 
            FROM habit_entries 
-           WHERE habit_id = ? AND date IN (${weekDates.map(() => '?').join(',')}) AND completed = 1`,
-          [habit.id, ...weekDates]
+           WHERE habit_id = ? AND date IN (${weekDatesUntilToday.map(() => '?').join(',')}) AND completed = 1`,
+          [habit.id, ...weekDatesUntilToday]
         ) as { count: number };
       
-        const rate = totalEntries.count > 0
-          ? Math.round((completedEntries.count / totalEntries.count) * 100)
+        // Calcul sur les jours écoulés uniquement
+        const rate = totalDaysElapsed > 0 
+          ? Math.round((completedEntries.count / totalDaysElapsed) * 100) 
           : 0;
       
         return { name: habit.name, rate };
       })
     );
 
-    let bestHabit: { name: string; rate: number } = { name: "Aucune", rate: 0 };
-    let worstHabit: { name: string; rate: number } = { name: "Aucune", rate: 0 };
+    let bestHabit: { name: string; rate: number } | null = null;
+    let worstHabit: { name: string; rate: number } | null = null;
 
     if (habitRates.length > 0) {
-      // Tri du plus régulier au moins régulier
       habitRates.sort((a, b) => b.rate - a.rate);
 
-      bestHabit = habitRates[0] ?? { name: "Aucune", rate: 0 };
-      worstHabit = habitRates[habitRates.length - 1] ?? { name: "Aucune", rate: 0 };
+      bestHabit = habitRates[0] ?? null;
+      worstHabit = habitRates[habitRates.length - 1] ?? null;
 
-      // 🧠 Cas particulier : toutes les habitudes ont le même taux
-      const firstRate = habitRates[0]?.rate ?? 0;
-      const allSameRate = habitRates.every(h => h.rate === firstRate);
-        
-      if (allSameRate) {
-        if (firstRate === 0) {
-          // Tout est à 0 → aucune habitude régulière
-          bestHabit = { name: "Aucune", rate: 0 };
-          worstHabit = { name: "Aucune", rate: 0 };
+      if (habitRates.every(h => h.rate === habitRates[0]?.rate)) {
+        if (habitRates[0]?.rate === 0) {
+          bestHabit = null;
+          worstHabit = null;
+        } else if (habitRates[0]?.rate === 100) {
+          worstHabit = null;
         } else {
-          // Tout est égal mais non nul → aucune "pire"
-          worstHabit = { name: "Aucune", rate: 0 };
+          bestHabit = null;
+          worstHabit = null;
         }
       }
     }

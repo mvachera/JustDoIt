@@ -7,6 +7,7 @@ import Home from './pages/Home'
 import { useAuth } from "./contexts/AuthContext";
 import Stats from "./pages/Stats";
 import Habits from "./pages/Habits";
+import Calendar from "./pages/Calendar";
 
 function App() {
   const { isLoggedIn } = useAuth();
@@ -30,6 +31,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/Habits" element={<Habits />} />
             <Route path="/Stats" element={<Stats />} />
+            <Route path="/Calendar" element={<Calendar />} />
             {/* Si user loggé et tente /login → redirigé vers home */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </>
