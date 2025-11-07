@@ -1,85 +1,79 @@
 import Header from '@/components/Header';
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchWithAuth } from '../utils/api';
+import { useHabits } from '../contexts/HabitsContext';
 
 // Types
-interface Habit {
-  id: number;
-  name: string;
-  color: string;
-  category: string;
-}
-
 interface ActivityData {
   [date: string]: {
     [habitId: number]: boolean;
   };
 }
 
-interface HabitStat {
-  completed: number;
-  total: number;
-}
-
-interface Stats {
-  totalDays: number;
-  completedDays: number;
-  habitStats: {
-    [habitId: number]: HabitStat;
-  };
-}
-
 type SelectedHabit = 'all' | number;
 
-const Calendar: React.FC = () => {
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+// Constantes
+const MONTHS = [
+  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+];
+
+const DAYS_OF_WEEK = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+const DEFAULT_COLORS = ['#10b981', '#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
+
+// Fonctions utilitaires
+function getDaysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+function getFirstDayOfMonth(year: number, month: number): number {
+  const day = new Date(year, month, 1).getDay();
+  return day === 0 ? 6 : day - 1;
+}
+
+function getColorForHabit(habitId: number, habitsLength: number, habitsArray: any[]): string {
+  const index = habitsArray.findIndex(h => h.id === habitId);
+  return DEFAULT_COLORS[index % DEFAULT_COLORS.length];
+}
+
+export default function Calendar() {
+  // ✅ Récupère les habits depuis le context
+  const { habits, isLoading: habitsLoading } = useHabits();
+  
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedHabit, setSelectedHabit] = useState<SelectedHabit>('all');
+  const [activityData, setActivityData] = useState<ActivityData>({});
+  const [isLoadingActivity, setIsLoadingActivity] = useState(true);
 
-  // Données d'exemple - à remplacer par tes vraies données
-  const habits: Habit[] = [
-    { id: 1, name: 'Balade', color: '#10b981', category: 'Santé' },
-    { id: 2, name: 'Natation', color: '#3b82f6', category: 'Sport' },
-    { id: 3, name: 'Réfléchir', color: '#ef4444', category: 'Détente' },
-    { id: 4, name: 'Méditation', color: '#f59e0b', category: 'Santé' },
-    { id: 5, name: 'Lecture', color: '#8b5cf6', category: 'Détente' }
-  ];
+  // Fonction pour récupérer seulement les activity data
+  async function fetchActivityData() {
+    setIsLoadingActivity(true);
+    try {
+      const start = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
+      const lastDay = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+      const end = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
-  // Données d'activité d'exemple - remplace par tes vraies données
-  // Format: { date: 'YYYY-MM-DD', habitId: number, completed: boolean }
-  const activityData: ActivityData = generateMockData(selectedYear, selectedMonth);
-
-  const months: string[] = [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-  ];
-
-  const daysOfWeek: string[] = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
-
-  function generateMockData(year: number, month: number): ActivityData {
-    const data: ActivityData = {};
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      data[date] = {};
-      
-      habits.forEach(habit => {
-        // Génère des données aléatoires pour l'exemple
-        data[date][habit.id] = Math.random() > 0.4;
+      const response = await fetchWithAuth(`/api/calendar?start=${start}&end=${end}`, {
+        method: 'GET',
       });
+
+      if (response.ok) {
+        const data = await response.json();
+        setActivityData(data.activityData);
+      }
+    } catch (error) {
+      console.error('Erreur récupération calendrier:', error);
+    } finally {
+      setIsLoadingActivity(false);
     }
-    
-    return data;
   }
 
-  function getDaysInMonth(year: number, month: number): number {
-    return new Date(year, month + 1, 0).getDate();
-  }
-
-  function getFirstDayOfMonth(year: number, month: number): number {
-    const day = new Date(year, month, 1).getDay();
-    return day === 0 ? 6 : day - 1; // Ajuste pour commencer lundi
-  }
+  // Charger les activity data quand le mois change
+  useEffect(() => {
+    fetchActivityData();
+  }, [selectedMonth, selectedYear]);
 
   function getActivityLevel(date: string): number {
     if (!activityData[date]) return 0;
@@ -101,58 +95,12 @@ const Calendar: React.FC = () => {
       if (level === 4) return '#94a3b8';
       return '#cbd5e1';
     } else {
-      const habit = habits.find(h => h.id === selectedHabit);
       if (level === 0) return '#1e293b';
-      return habit ? habit.color : '#10b981';
+      return getColorForHabit(selectedHabit as number, habits.length, habits);
     }
   }
 
-  function calculateStats(): Stats {
-    const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
-    let totalDays = 0;
-    let completedDays = 0;
-    const habitStats: { [habitId: number]: HabitStat } = {};
-
-    habits.forEach(habit => {
-      habitStats[habit.id] = { completed: 0, total: 0 };
-    });
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const dateObj = new Date(date);
-      
-      if (dateObj <= new Date()) {
-        totalDays++;
-        let dayCompleted = false;
-
-        habits.forEach(habit => {
-          habitStats[habit.id].total++;
-          if (activityData[date] && activityData[date][habit.id]) {
-            habitStats[habit.id].completed++;
-            dayCompleted = true;
-          }
-        });
-
-        if (selectedHabit === 'all') {
-          const completedCount = Object.values(activityData[date] || {}).filter(v => v).length;
-          if (completedCount > 0) completedDays++;
-        } else {
-          if (activityData[date] && activityData[date][selectedHabit as number]) {
-            completedDays++;
-          }
-        }
-      }
-    }
-
-    return { totalDays, completedDays, habitStats };
-  }
-
-  const stats: Stats = calculateStats();
-  const daysInMonth: number = getDaysInMonth(selectedYear, selectedMonth);
-  const firstDay: number = getFirstDayOfMonth(selectedYear, selectedMonth);
-  const today: Date = new Date();
-
-  const navigateMonth = (direction: number): void => {
+  function navigateMonth(direction: number) {
     let newMonth = selectedMonth + direction;
     let newYear = selectedYear;
 
@@ -166,16 +114,29 @@ const Calendar: React.FC = () => {
 
     setSelectedMonth(newMonth);
     setSelectedYear(newYear);
-  };
+  }
+
+  // ✅ Affiche le loading si les habits ou l'activité se chargent
+  if (habitsLoading || isLoadingActivity) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-center">
+        <div className="text-xl">Chargement...</div>
+      </div>
+    );
+  }
+
+  const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
+  const firstDay = getFirstDayOfMonth(selectedYear, selectedMonth);
+  const today = new Date();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-8">
-	  <Header />
-      <div className="max-w-7xl mx-auto">
+      <Header />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Calendrier</h1>
-          <p className="text-slate-400">Vue annuelle de tes habitudes</p>
+          <p className="text-slate-400">Vue mensuelle de tes habitudes</p>
         </div>
 
         {/* Filtre par habitude */}
@@ -191,27 +152,30 @@ const Calendar: React.FC = () => {
             >
               Toutes les habitudes
             </button>
-            {habits.map(habit => (
-              <button
-                key={habit.id}
-                onClick={() => setSelectedHabit(habit.id)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                  selectedHabit === habit.id
-                    ? 'text-white shadow-lg'
-                    : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
-                }`}
-                style={selectedHabit === habit.id ? {
-                  backgroundColor: habit.color,
-                  boxShadow: `0 10px 25px ${habit.color}40`
-                } : {}}
-              >
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: habit.color }}
-                />
-                {habit.name}
-              </button>
-            ))}
+            {habits.map((habit) => {
+              const color = getColorForHabit(habit.id, habits.length, habits);
+              return (
+                <button
+                  key={habit.id}
+                  onClick={() => setSelectedHabit(habit.id)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                    selectedHabit === habit.id
+                      ? 'text-white shadow-lg'
+                      : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+                  }`}
+                  style={selectedHabit === habit.id ? {
+                    backgroundColor: color,
+                    boxShadow: `0 10px 25px ${color}40`
+                  } : {}}
+                >
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
+                  {habit.name}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -227,7 +191,7 @@ const Calendar: React.FC = () => {
               </svg>
             </button>
             <h2 className="text-2xl font-bold">
-              {months[selectedMonth]} {selectedYear}
+              {MONTHS[selectedMonth]} {selectedYear}
             </h2>
             <button
               onClick={() => navigateMonth(1)}
@@ -243,7 +207,7 @@ const Calendar: React.FC = () => {
           <div className="space-y-2">
             {/* Jours de la semaine */}
             <div className="grid grid-cols-7 gap-2 mb-3">
-              {daysOfWeek.map(day => (
+              {DAYS_OF_WEEK.map(day => (
                 <div key={day} className="text-center text-xs text-slate-500 font-medium">
                   {day}
                 </div>
@@ -284,7 +248,7 @@ const Calendar: React.FC = () => {
                     {!isFuture && (
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10">
                         <div className="bg-slate-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl border border-slate-700 whitespace-nowrap">
-                          <div className="font-bold mb-1">{day} {months[selectedMonth]}</div>
+                          <div className="font-bold mb-1">{day} {MONTHS[selectedMonth]}</div>
                           {selectedHabit === 'all' ? (
                             <div>{level} habitude{level > 1 ? 's' : ''} complétée{level > 1 ? 's' : ''}</div>
                           ) : (
@@ -315,125 +279,14 @@ const Calendar: React.FC = () => {
               ) : (
                 <>
                   <div className="w-5 h-5 rounded" style={{ backgroundColor: '#1e293b' }} />
-                  <div className="w-5 h-5 rounded" style={{ backgroundColor: habits.find(h => h.id === selectedHabit)?.color || '#10b981' }} />
+                  <div className="w-5 h-5 rounded" style={{ backgroundColor: getColorForHabit(selectedHabit as number, habits.length, habits) }} />
                 </>
               )}
             </div>
             <span>Plus</span>
           </div>
         </div>
-
-        {/* Statistiques du mois */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Stats globales */}
-          <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl p-6 shadow-xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-white/20 rounded-xl">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold">Taux de réussite</h3>
-            </div>
-            <div className="text-4xl font-bold mb-2">
-              {stats.totalDays > 0 ? Math.round((stats.completedDays / stats.totalDays) * 100) : 0}%
-            </div>
-            <p className="text-purple-100">
-              {stats.completedDays} / {stats.totalDays} jours complétés
-            </p>
-          </div>
-
-          {/* Meilleure habitude */}
-          <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-2xl p-6 shadow-xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-white/20 rounded-xl">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold">Meilleure habitude</h3>
-            </div>
-            {(() => {
-              const best = Object.entries(stats.habitStats)
-                .map(([id, stat]) => ({
-                  ...habits.find(h => h.id === parseInt(id)),
-                  percentage: stat.total > 0 ? (stat.completed / stat.total) * 100 : 0
-                }))
-                .sort((a, b) => b.percentage - a.percentage)[0];
-              
-              return best ? (
-                <>
-                  <div className="text-2xl font-bold mb-2">{best.name}</div>
-                  <p className="text-green-100">{Math.round(best.percentage)}% de réussite</p>
-                </>
-              ) : (
-                <p className="text-green-100">Pas encore de données</p>
-              );
-            })()}
-          </div>
-
-          {/* Total d'habitudes */}
-          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 shadow-xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-white/20 rounded-xl">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold">Total complétions</h3>
-            </div>
-            <div className="text-4xl font-bold mb-2">
-              {Object.values(stats.habitStats).reduce((acc, stat) => acc + stat.completed, 0)}
-            </div>
-            <p className="text-blue-100">
-              habitudes complétées ce mois
-            </p>
-          </div>
-        </div>
-
-        {/* Détails par habitude */}
-        <div className="mt-6 bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50">
-          <h3 className="text-xl font-bold mb-6">Détails par habitude</h3>
-          <div className="space-y-4">
-            {habits.map(habit => {
-              const stat = stats.habitStats[habit.id];
-              const percentage = stat.total > 0 ? (stat.completed / stat.total) * 100 : 0;
-              
-              return (
-                <div key={habit.id} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: habit.color }}
-                      />
-                      <span className="font-medium">{habit.name}</span>
-                      <span className="text-sm text-slate-400">{habit.category}</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-slate-400">
-                        {stat.completed} / {stat.total}
-                      </span>
-                      <span className="font-bold">{Math.round(percentage)}%</span>
-                    </div>
-                  </div>
-                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${percentage}%`,
-                        backgroundColor: habit.color
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
       </div>
     </div>
   );
-};
-
-export default Calendar;
+}

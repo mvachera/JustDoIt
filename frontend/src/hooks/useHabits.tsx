@@ -1,37 +1,12 @@
-import { useState } from 'react';
 import { fetchWithAuth } from '../utils/api';
 import { useToast } from './use-toast';
-import { Habit, HabitCategory, HabitDifficulty } from '../types/habits';
+import { HabitCategory, HabitDifficulty } from '../types/habits';
+import { useHabits as useHabitsContext } from '../contexts/HabitsContext';
 
 export function useHabits() {
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Récupère les données du context au lieu de faire des appels API
+  const { habits, isLoading, refreshHabits } = useHabitsContext();
   const { toast } = useToast();
-
-  const getHabits = async () => {
-    try {
-      const response = await fetchWithAuth('/api/habits', { method: 'GET' });
-
-      if (response.ok) {
-        const data = await response.json();
-        setHabits(data);
-      } else {
-        toast({
-          title: "Erreur",
-          description: "Impossible de récupérer vos habitudes",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Erreur réseau",
-        description: "Impossible de se connecter au serveur",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const createHabit = async (formData: {
     name: string;
@@ -51,8 +26,8 @@ export function useHabits() {
           description: `${formData.name} a été ajoutée à vos habitudes.`,
         });
 
-        // Recharge la liste après ajout
-        getHabits();
+        // Recharge les données du context
+        await refreshHabits();
         return true;
       } else {
         const error = await response.json();
@@ -95,8 +70,8 @@ export function useHabits() {
           description: `${data.name || 'Cette habitude'} a été mise à jour.`,
         });
 
-        // Recharge la liste après modification
-        getHabits();
+        // Recharge les données du context
+        await refreshHabits();
         return true;
       } else {
         const error = await response.json();
@@ -130,7 +105,9 @@ export function useHabits() {
           title: "Habitude supprimée",
           description: "L'habitude a été supprimée avec succès",
         });
-        setHabits(habits.filter(h => h.id !== id));
+        
+        // Recharge les données du context
+        await refreshHabits();
       } else {
         const error = await response.json();
         toast({
@@ -163,8 +140,8 @@ export function useHabits() {
             : "Marqué comme non complété",
         });
       
-      // Recharge les habitudes pour mettre à jour l'affichage
-      getHabits();
+        // Recharge les données du context
+        await refreshHabits();
       } else {
         const error = await response.json();
         toast({
@@ -178,9 +155,9 @@ export function useHabits() {
         title: "Erreur réseau",
         description: "Impossible de se connecter au serveur",
         variant: "destructive",
-        });
-      }
-    };
+      });
+    }
+  };
 
   const toggleAllHabits = async () => {
     try {
@@ -207,8 +184,8 @@ export function useHabits() {
         description: "Bravo, tu as tout validé pour aujourd'hui !",
       });
 
-      // Recharge les habitudes
-      getHabits();
+      // Recharge les données du context
+      await refreshHabits();
     } catch (error) {
       toast({
         title: "Erreur",
@@ -221,7 +198,7 @@ export function useHabits() {
   return {
     habits,
     isLoading,
-    getHabits,
+    getHabits: refreshHabits, // Alias pour la compatibilité
     createHabit,
     updateHabit,
     deleteHabit,
