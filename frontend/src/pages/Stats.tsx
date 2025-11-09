@@ -46,7 +46,7 @@ export default function Stats() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <Header />
 
       <div className="max-w-4xl mx-auto px-4 pt-24 pb-12">
