@@ -81,7 +81,6 @@ router.get('/stats', authenticateToken, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Les paramètres start et end sont requis' });
     }
 
-    // Récupérer les habitudes avec leur catégorie
     const habits = await dbAll(
       'SELECT id, name, category FROM habits WHERE user_id = ?',
       [userId]
@@ -92,14 +91,13 @@ router.get('/stats', authenticateToken, async (req: AuthRequest, res) => {
     if (habitIds.length === 0) {
       return res.json({
         totalDays: 0,
-        completedDays: 0,
+        totalPossibleCompletions: 0,
+        totalCompletions: 0,
         habitStats: {},
-        bestHabit: null,
-        totalCompletions: 0
+        bestHabit: null
       });
     }
 
-    // Récupérer tous les entries de la période
     const entries = await dbAll(
       `SELECT habit_id, date, completed 
        FROM habit_entries 
@@ -128,45 +126,40 @@ router.get('/stats', authenticateToken, async (req: AuthRequest, res) => {
       };
     });
 
-    // Compter les jours où au moins une habitude a été complétée
-    const completedDateSet = new Set<string>();
-    let totalDays = 0;
-
-    // Parcourir toutes les dates de la période
+    // Compter les jours
     const startDate = new Date(start);
     const endDate = new Date(end);
     const today = new Date();
+    
     today.setHours(0, 0, 0, 0);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+
+    let totalDays = 0;
     const currentDate = new Date(startDate);
 
-    while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split('T')[0]!;
-      const dateObj = new Date(dateStr);
+    while (currentDate <= today && currentDate <= endDate) {
+      totalDays++;
       
-      // Compter seulement les jours passés
-      if (dateObj <= today) {
-        totalDays++;
-        
-        // Compter les habitudes pour chaque jour
-        habitIds.forEach(habitId => {
-          habitStats[habitId]!.total++;
-        });
-      }
+      // Chaque habitude compte pour chaque jour
+      habitIds.forEach(habitId => {
+        habitStats[habitId]!.total++;
+      });
       
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    // Compter les complétions
+    // ✅ Nombre total d'habitudes possibles = nombre d'habitudes × jours passés
+    const totalPossibleCompletions = habitIds.length * totalDays;
+
+    // Compter les complétions réelles
     let totalCompletions = 0;
     entries.forEach(entry => {
       if (entry.completed === 1) {
         habitStats[entry.habit_id]!.completed++;
-        completedDateSet.add(entry.date);
         totalCompletions++;
       }
     });
-
-    const completedDays = completedDateSet.size;
 
     // Trouver la meilleure habitude
     let bestHabit = null;
@@ -187,10 +180,10 @@ router.get('/stats', authenticateToken, async (req: AuthRequest, res) => {
 
     res.json({
       totalDays,
-      completedDays,
+      totalPossibleCompletions,
+      totalCompletions,
       habitStats,
-      bestHabit,
-      totalCompletions
+      bestHabit
     });
   } catch (error) {
     console.error('Erreur récupération stats calendrier:', error);
