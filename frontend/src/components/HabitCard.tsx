@@ -30,7 +30,7 @@ export default function HabitCard({ habit, onToggle, onDelete, onEdit }: HabitCa
           {/* Badge de série */}
           {habit.streak > 0 && (
             <div className="flex items-center gap-1 hover:bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full"
-              title="Nombre de jours consécutifs"
+              title="Série en cours"
             >
               <Flame className="w-4 h-4" />
               <span className="text-sm font-semibold">{habit.streak}j</span>
