@@ -25,7 +25,6 @@ describe('POST /api/habits - Test d\'intégration', () => {
     await dbRun('DELETE FROM habits WHERE user_id = ?', [testUserId]);
   });
 
-  // ✅ TEST 1 : Utiliser 'easy' au lieu de 'Facile'
   it('crée une habitude et la sauvegarde en BDD', async () => {
     const response = await request(app)
       .post('/api/habits')
@@ -49,7 +48,6 @@ describe('POST /api/habits - Test d\'intégration', () => {
     expect(habit.description).toBe('30 min par jour');
   });
 
-  // ✅ TEST 2 : Utiliser 'easy' aussi
   it('refuse de créer une 6ème habitude', async () => {
     for (let i = 1; i <= 5; i++) {
       await request(app)
@@ -73,7 +71,6 @@ describe('POST /api/habits - Test d\'intégration', () => {
     expect(response.body.error).toContain('Limite atteinte');
   });
 
-  // ✅ TEST 3 : Restaurer le mock original pour ce test
   it('refuse si pas authentifié', async () => {
     // Créer une nouvelle app sans le mock
     const testApp = express();
