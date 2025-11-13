@@ -1,8 +1,8 @@
 import { Plus, CheckCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Header from '../components/Header';
-import HabitCard from '../components/HabitCard';
-import HabitFormModal from '../components/HabitForm';
+import HabitCard from '../components/habit/HabitCard';
+import HabitFormModal from '../components/habit/HabitForm';
 import { useHabits } from '../hooks/useHabits';
 import { CATEGORIES, Habit } from '../types/habits';
 
@@ -33,7 +33,7 @@ export default function Habits() {
     : habits.filter(h => h.category === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
       <Header />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">

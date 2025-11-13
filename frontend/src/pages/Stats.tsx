@@ -1,14 +1,23 @@
+// pages/Stats.tsx
 import { Calendar, TrendingUp, Target, Award, Flame, BarChart3 } from 'lucide-react';
 import Header from '../components/Header';
-import StatsCard from '../components/StatsCard';
+import StatsCard from '../components/stats/StatsCard';
+import WeekCalendar from '../components/stats/WeekCalendar';
 import { useStats } from '../hooks/useStats';
+
+function getMotivationMessage(rate: number): string {
+  if (rate === 0) return '😅 Pas encore commencé !';
+  if (rate >= 80) return '🔥 Excellent !';
+  if (rate >= 60) return '👍 Très bien';
+  return '💪 Continue !';
+}
 
 export default function Stats() {
   const { stats, isLoading, error } = useStats();
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
         <Header />
         <div className="text-center pt-24 text-gray-400">
           Chargement...
@@ -19,7 +28,7 @@ export default function Stats() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
         <Header />
         <div className="text-center pt-24 text-red-400">
           {error}
@@ -28,29 +37,12 @@ export default function Stats() {
     );
   }
 
-  const getMotivationMessage = (rate: number): string => {
-    if (rate === 0) return '😅 Pas encore commencé !';
-    if (rate >= 80) return '🔥 Excellent !';
-    if (rate >= 60) return '👍 Très bien';
-    return '💪 Continue !';
-  };
-
-  // ✅ Fonction pour déterminer la couleur
-  function getWeekDayColor(completed: number): string {
-    if (completed === 0) return 'bg-gray-700';
-    if (completed === 1) return 'bg-purple-300';
-    if (completed === 2) return 'bg-purple-400';
-    if (completed === 3) return 'bg-purple-500';
-    if (completed === 4) return 'bg-purple-600';
-    return 'bg-purple-800';
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
       <Header />
 
       <div className="max-w-4xl mx-auto px-4 pt-24 pb-12">
-        {/* Header avec date */}
+        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Statistiques 📊</h1>
           <p className="text-gray-400">
@@ -74,7 +66,7 @@ export default function Stats() {
             <p className="text-xs text-gray-500 mt-1">Total d'habitudes</p>
           </StatsCard>
 
-          {/* Complétées aujourd'hui avec barre de progression */}
+          {/* Complétées aujourd'hui */}
           <StatsCard
             icon={Award}
             title="Complétées aujourd'hui"
@@ -98,15 +90,11 @@ export default function Stats() {
             </p>
           </StatsCard>
 
-          {/* Plus longue série avec flamme */}
+          {/* Plus longue série */}
           <StatsCard
             icon={TrendingUp}
             title={`Plus longue série en cours : ${stats.longestStreakName || "Inconnue"}`}
-            value={
-              stats.longestStreak > 0
-                ? `${stats.longestStreak} jours`
-                : "Aucune série en cours"
-            }
+            value={stats.longestStreak > 0 ? `${stats.longestStreak} jours` : "Aucune série en cours"}
             color="bg-green-600"
           >
             {stats.longestStreak > 0 ? (
@@ -121,7 +109,7 @@ export default function Stats() {
             )}
           </StatsCard>
 
-          {/* Taux de réussite avec message motivant */}
+          {/* Taux de réussite */}
           <StatsCard
             icon={Calendar}
             title="Taux de réussite"
@@ -134,7 +122,7 @@ export default function Stats() {
             <p className="text-xs text-gray-500 mt-1">Basé sur aujourd'hui</p>
           </StatsCard>
 
-          {/* Habitude la plus régulière / la moins régulière */}
+          {/* Régularité */}
           <StatsCard
             icon={BarChart3}
             title="Régularité des habitudes de cette semaine"
@@ -162,73 +150,13 @@ export default function Stats() {
           </StatsCard>
         </div>
 
-        {/* Résumé de la semaine */}
-        <div className="mt-8 bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition">
-          <div className='flex justify-between mb-4'>
-            <h3 className="text-lg font-semibold text-white">Cette semaine</h3>
-            <span className='text-gray-500'>
-              Habitudes complétées : {stats.totalCompletedThisWeek}/{stats.totalHabits * 7}
-            </span>
-          </div>
-          
-          <div className="grid grid-cols-7 gap-2">
-            {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day, i) => {
-              const dayData = stats.weeklyData?.[i];
-              const today = new Date().getDay();
-              const adjustedToday = today === 0 ? 6 : today - 1;
-              const isToday = i === adjustedToday;
-              const isFuture = i > adjustedToday;
-              const completed = dayData?.completed || 0;
-
-              return (
-                <div key={i} className="text-center">
-                  <p
-                    className={`text-xs mb-2 ${
-                      isToday ? 'text-purple-400 font-bold' : 'text-gray-500'
-                    }`}
-                  >
-                    {day}
-                  </p>
-                  <div
-                    className={`w-full aspect-square rounded-lg flex items-center justify-center transition-all duration-300 relative group ${
-                      isFuture ? 'bg-gray-700 opacity-30' : getWeekDayColor(completed)
-                    } ${isToday ? 'ring-2 ring-purple-400' : ''}`}
-                  >
-                    {/* ✅ Tooltip au hover */}
-                    {!isFuture && (
-                      <div className="absolute bottom-full mb-2 hidden group-hover:block z-10">
-                        <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl border border-gray-700 whitespace-nowrap">
-                          <div className="font-bold mb-1">{day}</div>
-                          <div>
-                            {completed} habitude{completed > 1 ? 's' : ''} complétée{completed > 1 ? 's' : ''}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* ✅ Légende avec les couleurs */}
-          <div className="mt-4 flex items-center justify-center gap-4 text-sm text-gray-400">
-            <span>Moins</span>
-            <div className="flex gap-1">
-              <div className="w-4 h-4 rounded bg-gray-700" />
-              <div className="w-4 h-4 rounded bg-purple-300" />
-              <div className="w-4 h-4 rounded bg-purple-400" />
-              <div className="w-4 h-4 rounded bg-purple-500" />
-              <div className="w-4 h-4 rounded bg-purple-600" />
-              <div className="w-4 h-4 rounded bg-purple-800" />
-            </div>
-            <span>Plus</span>
-          </div>
-
-          <p className="text-xs text-gray-500 mt-4 text-center">
-            Nombre d'habitudes complétées en moyenne par jour : {stats.averagePerDay}
-          </p>
-        </div>
+        {/* Calendrier de la semaine */}
+        <WeekCalendar
+          weeklyData={stats.weeklyData}
+          totalHabits={stats.totalHabits}
+          totalCompletedThisWeek={stats.totalCompletedThisWeek}
+          averagePerDay={stats.averagePerDay.toString()}
+        />
       </div>
     </div>
   );

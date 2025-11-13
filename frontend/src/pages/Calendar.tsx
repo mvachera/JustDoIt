@@ -60,7 +60,7 @@ export default function Calendar() {
   const firstDay = getFirstDayOfMonth(selectedYear, selectedMonth);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-8">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white p-8">
       <Header />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
         {/* Header */}

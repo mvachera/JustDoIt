@@ -1,5 +1,5 @@
 import { Calendar, CheckCircle2, Trash2, Flame, Pencil } from 'lucide-react';
-import { Habit, CATEGORIES, DIFFICULTY } from '../types/habits';
+import { Habit, CATEGORIES, DIFFICULTY } from '../../types/habits';
 
 interface HabitCardProps {
   habit: Habit;

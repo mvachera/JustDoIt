@@ -2,9 +2,14 @@ import { useState, useEffect } from 'react';
 import { Target, TrendingUp, Calendar, BarChart3, Zap, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
+import { useAIAnalysis } from '../hooks/useAIAnalysis';
+import AIAnalysisModal from '../components/AIAnalysisModal';
+
 
 export default function Home() {
   const [name, setName] = useState('');
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const { analysis, isLoading, error, analyzeHabits } = useAIAnalysis();
 
   useEffect(() => {
     const storedName = localStorage.getItem('name');
@@ -154,19 +159,24 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Coming Soon - AI Section */}
-        <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-2xl p-8 border border-purple-500/30">
+        {/* Section IA */}
+        <div 
+          onClick={() => setIsAIModalOpen(true)}
+          className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-2xl p-8 border border-purple-500/30 cursor-pointer hover:border-purple-500 transition-all"
+        >
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="bg-purple-600 rounded-full p-2">
               <Zap className="w-6 h-6 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-white">
-              Bientôt : Assistant IA personnalisé
+              Assistant IA personnalisé
             </h2>
           </div>
           <p className="text-gray-300 text-center max-w-2xl mx-auto leading-relaxed">
-            Un coach IA intelligent analysera vos habitudes et vous proposera des 
-            conseils personnalisés pour maximiser votre réussite. Restez à l'écoute ! 🤖✨
+            Obtenez une analyse personnalisée de vos habitudes et des conseils pour vous améliorer ! 🤖✨
+          </p>
+          <p className="text-purple-400 text-center mt-4 font-semibold">
+            Cliquez pour analyser vos habitudes →
           </p>
         </div>
 
@@ -184,6 +194,16 @@ export default function Home() {
           </p>
         </div>
       </main>
+
+      {/* Modal IA */}
+      <AIAnalysisModal
+        isOpen={isAIModalOpen}
+        onClose={() => setIsAIModalOpen(false)}
+        analysis={analysis}
+        isLoading={isLoading}
+        error={error}
+        onAnalyze={analyzeHabits}
+      />
     </div>
   );
 }

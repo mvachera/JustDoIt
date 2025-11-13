@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { CATEGORIES, HabitCategory, DIFFICULTY, HabitDifficulty, Habit } from '../types/habits';
-import { useHabits } from '../hooks/useHabits';
+import { CATEGORIES, HabitCategory, DIFFICULTY, HabitDifficulty, Habit } from '../../types/habits';
+import { useHabits } from '../../hooks/useHabits';
 
 interface HabitFormProps {
   isOpen: boolean;
