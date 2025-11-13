@@ -4,15 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
-export default function LoginForm() {
+export default function ForgotPassword() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const { toast } = useToast();
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,31 +19,34 @@ export default function LoginForm() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email }),
       });
 
       const data = await response.json();
+      
       if (response.ok) {
-        console.log('Connexion réussie!', data);
-		    login(data.accessToken, data.user);
-      } else {
-        console.error('Erreur de connexion:', data.error);
+        setEmailSent(true);
         toast({
-          title: "Erreur de connexion !",
-          description: data.error,
+          title: "Email envoyé !",
+          description: "Vérifiez votre boîte mail pour réinitialiser votre mot de passe.",
+        });
+      } else {
+        toast({
+          title: "Erreur",
+          description: data.error || "Une erreur est survenue.",
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error('Erreur réseau:', error);
       toast({
-        title: "Erreur réseau !",
-        description: "Serveur indisponible.",
+        title: "Erreur réseau",
+        description: "Impossible de contacter le serveur.",
         variant: "destructive",
       });
     } finally {
@@ -52,13 +54,47 @@ export default function LoginForm() {
     }
   };
 
+  if (emailSent) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-950">
+        <Card className="w-full max-w-md bg-white">
+          <CardHeader>
+            <CardTitle>Email envoyé ✉️</CardTitle>
+            <CardDescription>
+              Un lien de réinitialisation a été envoyé à {email}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-4">
+              Cliquez sur le lien dans l'email pour réinitialiser votre mot de passe. 
+              Le lien est valide pendant 1 heure.
+            </p>
+            <Button 
+              onClick={() => navigate('/login')}
+              className="w-full"
+            >
+              Retour à la connexion
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-950">
       <Card className="w-full max-w-md bg-white">
         <CardHeader>
-          <CardTitle>Connexion</CardTitle>
+          <button
+            onClick={() => navigate('/login')}
+            className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-2"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Retour
+          </button>
+          <CardTitle>Mot de passe oublié</CardTitle>
           <CardDescription>
-            Connectez-vous à votre compte pour gérer vos habitudes
+            Entrez votre email pour recevoir un lien de réinitialisation
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -74,48 +110,15 @@ export default function LoginForm() {
                 required
               />
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
 
             <Button 
               type="submit" 
               className="w-full" 
               disabled={isLoading}
             >
-              {isLoading ? 'Connexion...' : 'Se connecter'}
+              {isLoading ? 'Envoi en cours...' : 'Envoyer le lien'}
             </Button>
           </form>
-
-          <div className="mt-4 text-center text-sm">
-            <button 
-              type="button"
-              onClick={() => navigate("/forgot-password")}
-              className="text-blue-600 hover:underline"
-            >
-              Mot de passe oublié ?
-            </button>
-          </div>
-
-          <div className="mt-4 text-center text-sm">
-            <span className="text-gray-600">Pas encore de compte ? </span>
-            <button 
-              type="button"
-              onClick={() => navigate("/register")}
-              className="text-blue-600 hover:underline"
-            >
-              S'inscrire
-            </button>
-        </div>
         </CardContent>
       </Card>
     </div>

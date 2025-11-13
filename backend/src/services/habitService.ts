@@ -1,4 +1,4 @@
-import { HabitRepository } from '../repositories/habitRepository';
+import { HabitRepository } from '../repositories/habit.repository';
 import { getLast7Days } from '../utils/dateHelpers';
 import { CreateHabitDto, UpdateHabitDto } from '../types/habit.types';
 

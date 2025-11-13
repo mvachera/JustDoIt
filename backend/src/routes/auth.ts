@@ -1,112 +1,66 @@
 import express from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { dbRun, dbGet } from '../config/database';
-import { CreateUserRequest, LoginRequest, AuthResponse, User } from '../types';
+import { 
+  authenticateUser, 
+  registerUser, 
+  generateTokens, 
+  setRefreshTokenCookie, 
+  verifyRefreshToken,
+  removeUserPassword 
+} from '../services/authService';
+import { updateRefreshToken } from '../repositories/auth.repository';
+import { sendResetEmail } from '../config/email';
+import { generateResetToken, resetPassword } from '../services/authService';
 
 const router = express.Router();
-const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || 'ton-secret-temporaire';
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'ton-secret-temporaire';
-const ACCESS_TOKEN_EXPIRATION = "1h";
-const REFRESH_TOKEN_EXPIRATION = "7d";
 
-// Connexion
 router.post('/login', async (req, res) => {
   try {
-    const { email, password }: LoginRequest = req.body;
+    const { email, password } = req.body;
 
-    // Trouve l'utilisateur
-    const user = await dbGet('SELECT * FROM users WHERE email = ?', [email]) as User;
-    if (!user) {
-      return res.status(400).json({ error: 'Utilisateur non trouvé.' });
-    }
+    const user = await authenticateUser(email, password);
+    const { accessToken, refreshToken } = generateTokens(user.id);
 
-    // Vérifie le mot de passe
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      return res.status(400).json({ error: 'Mot de passe incorrect.' });
-    }
+    await updateRefreshToken(user.id, refreshToken);
+    setRefreshTokenCookie(res, refreshToken);
 
-    // Crée le token JWT
-    const accessToken = jwt.sign({ userId: user.id }, ACCESS_TOKEN_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRATION });
-    const refreshToken = jwt.sign({ userId: user.id }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRATION });
+    res.json({ accessToken, user: removeUserPassword(user) });
 
-    // Retourne sans le password
-    const { password: _, ...userWithoutPassword } = user;
-    res.json({ accessToken, refreshToken, user: userWithoutPassword } as AuthResponse);
-
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erreur login:', error);
-    res.status(500).json({ error: 'Erreur serveur.' });
+    res.status(400).json({ error: error.message || 'Erreur serveur.' });
   }
 });
 
-// Inscription
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, confirmPassword, name }: CreateUserRequest = req.body;
+    const { email, password, confirmPassword, name } = req.body;
 
-    // Vérifie que les mots de passe correspondent
-    if (password !== confirmPassword) {
-      return res.status(400).json({ error: 'Les mots de passe ne correspondent pas.' });
-    }
-    
-    // Vérifie si l'utilisateur existe déjà
-    const existingUser = await dbGet('SELECT * FROM users WHERE email = ?', [email]);
-    if (existingUser) {
-      return res.status(400).json({ error: 'Utilisateur déjà existant.' });
-    }
+    const newUser = await registerUser(email, password, confirmPassword, name);
+    const { accessToken, refreshToken } = generateTokens(newUser.id);
 
-    // Hash le mot de passe
-    const hashedPassword = await bcrypt.hash(password, 10);
+    await updateRefreshToken(newUser.id, refreshToken);
+    setRefreshTokenCookie(res, refreshToken);
 
-    // Crée l'utilisateur
-    await dbRun(
-      'INSERT INTO users (email, password, name) VALUES (?, ?, ?)',
-      [email, hashedPassword, name]
-    );
+    res.status(201).json({ accessToken, user: removeUserPassword(newUser) });
 
-    // Récupère l'utilisateur créé
-    const newUser = await dbGet('SELECT * FROM users WHERE email = ?', [email]) as User;
-    
-    // Crée le token JWT
-    const accessToken = jwt.sign({ userId: newUser.id }, ACCESS_TOKEN_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRATION });
-    const refreshToken = jwt.sign({ userId: newUser.id }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRATION });
-
-    // Retourne sans le password
-    const { password: _, ...userWithoutPassword } = newUser;
-    res.status(201).json({ accessToken, refreshToken, user: userWithoutPassword } as AuthResponse);
-
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erreur register:', error);
-    res.status(500).json({ error: 'Erreur serveur.' });
+    res.status(400).json({ error: error.message || 'Erreur serveur.' });
   }
 });
 
 router.post('/refresh', async (req, res) => {
-  const { refreshToken } = req.body;
-  if (!refreshToken) return res.status(401).json({ error: "Refresh token manquant" });
+  const refreshToken = req.cookies.refreshToken;
+  
+  if (!refreshToken) {
+    return res.status(401).json({ error: "Refresh token manquant" });
+  }
 
   try {
-    // Vérifie que le token est valide
-    const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET!) as any;
+    const userId = await verifyRefreshToken(refreshToken);
+    const { accessToken } = generateTokens(userId);
 
-    // Vérifie que ce refresh token correspond à celui en DB
-    const user = await dbGet('SELECT id, refreshToken FROM users WHERE id = ?',
-      [decoded.userId]) as { id: number, refreshToken: string | null };
-
-    if (!user || user.refreshToken !== refreshToken) {
-      return res.status(403).json({ error: "Refresh token invalide" });
-    }
-
-    // Génère un nouvel access token
-    const newAccessToken = jwt.sign(
-      { userId: user.id },
-      ACCESS_TOKEN_SECRET,
-      { expiresIn: ACCESS_TOKEN_EXPIRATION }
-    );
-
-    res.json({ accessToken: newAccessToken });
+    res.json({ accessToken });
 
   } catch (err) {
     console.error(err);
@@ -114,5 +68,38 @@ router.post('/refresh', async (req, res) => {
   }
 });
 
+router.post('/logout', async (req, res) => {
+  res.clearCookie('refreshToken');
+  res.json({ message: 'Déconnecté' });
+});
+
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const { resetToken, email: userEmail, name } = await generateResetToken(email);
+    await sendResetEmail(userEmail, name, resetToken);
+
+    res.json({ message: 'Email de réinitialisation envoyé.' });
+
+  } catch (error: any) {
+    console.error('Erreur forgot-password:', error);
+    res.status(400).json({ error: error.message || 'Erreur serveur.' });
+  }
+});
+
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    await resetPassword(token, password);
+
+    res.json({ message: 'Mot de passe réinitialisé avec succès.' });
+
+  } catch (error: any) {
+    console.error('Erreur reset-password:', error);
+    res.status(400).json({ error: error.message || 'Erreur serveur.' });
+  }
+});
 
 export default router;

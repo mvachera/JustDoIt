@@ -13,17 +13,25 @@ export function initDatabase(): void {
     )
   `);
 
-    db.run(`ALTER TABLE habits ADD COLUMN streak INTEGER DEFAULT 0`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
-        console.error('Erreur ajout colonne streak:', err);
-      }
-    });
+  db.run(`ALTER TABLE habits ADD COLUMN streak INTEGER DEFAULT 0`, (err) => {
+    if (err && !err.message.includes('duplicate column name')) {
+      console.error('Erreur ajout colonne streak:', err);
+    }
+  });
 
-    db.run(`ALTER TABLE habits ADD COLUMN best_streak INTEGER DEFAULT 0`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
-        console.error('Erreur ajout colonne best_streak:', err);
-      }
-    });
+  db.run(`ALTER TABLE habits ADD COLUMN best_streak INTEGER DEFAULT 0`, (err) => {
+    if (err && !err.message.includes('duplicate column name')) {
+      console.error('Erreur ajout colonne best_streak:', err);
+    }
+  });
+
+  db.run(`
+    ALTER TABLE users ADD COLUMN resetPasswordToken TEXT;
+  `);
+
+  db.run(`
+    ALTER TABLE users ADD COLUMN resetPasswordExpires INTEGER;
+  `);
 
   // Table des habitudes
   db.run(`

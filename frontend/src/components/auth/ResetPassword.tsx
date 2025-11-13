@@ -1,63 +1,83 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-export default function RegisterForm() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+export default function ResetPassword() {
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!token) {
+      toast({
+        title: "Token manquant",
+        description: "Le lien de réinitialisation est invalide.",
+        variant: "destructive",
+      });
+      navigate('/login');
+    }
+  }, [token, navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (password !== confirmPassword) {
       toast({
-          title: "Erreur de connexion !",
-          description: 'Les mots de passe ne correspondent pas',
-          variant: "destructive",
-        });
+        title: "Erreur",
+        description: "Les mots de passe ne correspondent pas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Erreur",
+        description: "Le mot de passe doit contenir au moins 6 caractères.",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsLoading(true);
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch('http://localhost:5000/api/auth/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password, confirmPassword }),
+        body: JSON.stringify({ token, password }),
       });
 
       const data = await response.json();
-
+      
       if (response.ok) {
-        console.log('Inscription réussie!', data);
-        login(data.accessToken, data.user);
-      } else {
-        console.error('Erreur d\'inscription:', data.error);
         toast({
-          title: "Erreur de connexion !",
-          description: data.error,
+          title: "Mot de passe réinitialisé !",
+          description: "Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.",
+        });
+        navigate('/login');
+      } else {
+        toast({
+          title: "Erreur",
+          description: data.error || "Le lien est invalide ou expiré.",
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error('Erreur réseau:', error);
       toast({
-        title: "Erreur réseau !",
-        description: "Serveur indisponible.",
+        title: "Erreur réseau",
+        description: "Impossible de contacter le serveur.",
         variant: "destructive",
       });
     } finally {
@@ -69,39 +89,15 @@ export default function RegisterForm() {
     <div className="flex items-center justify-center min-h-screen bg-gray-950">
       <Card className="w-full max-w-md bg-white">
         <CardHeader>
-          <CardTitle>Inscription</CardTitle>
+          <CardTitle>Nouveau mot de passe</CardTitle>
           <CardDescription>
-            Créez votre compte pour commencer à gérer vos habitudes
+            Choisissez un nouveau mot de passe sécurisé
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nom</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Votre nom"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="votre@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
+              <Label htmlFor="password">Nouveau mot de passe</Label>
               <Input
                 id="password"
                 type="password"
@@ -131,20 +127,9 @@ export default function RegisterForm() {
               className="w-full" 
               disabled={isLoading}
             >
-              {isLoading ? 'Inscription...' : 'S\'inscrire'}
+              {isLoading ? 'Réinitialisation...' : 'Réinitialiser le mot de passe'}
             </Button>
           </form>
-          
-          <div className="mt-4 text-center text-sm">
-            <span className="text-gray-600">Déjà un compte ? </span>
-            <button 
-              type="button"
-              onClick={() => navigate("/login")}
-              className="text-blue-600 hover:underline"
-            >
-              Se connecter
-            </button>
-          </div>
         </CardContent>
       </Card>
     </div>

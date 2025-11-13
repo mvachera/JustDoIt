@@ -1,4 +1,4 @@
-import { HabitRepository } from '../repositories/habitRepository';
+import { HabitRepository } from '../repositories/habit.repository';
 import { ActivityData, CalendarStats, HabitStats } from '../types/calendar.types';
 
 export class CalendarService {

@@ -2,7 +2,7 @@ import express from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { dbAll } from '../config/database';
 import { getWeekDaysUntilToday } from '../utils/dateHelpers';
-import { HabitRepository } from '../repositories/habitRepository';
+import { HabitRepository } from '../repositories/habit.repository';
 
 const router = express.Router();
 

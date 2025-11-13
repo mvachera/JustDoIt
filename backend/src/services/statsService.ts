@@ -1,5 +1,5 @@
 import { StatsRepository } from '../repositories/stats.repository';
-import { HabitRepository } from '../repositories/habitRepository';
+import { HabitRepository } from '../repositories/habit.repository';
 import { Stats, WeeklyData, HabitRate } from '../types/stats.types';
 import { getLast7Days, getWeekDaysUntilToday } from '../utils/dateHelpers';
 

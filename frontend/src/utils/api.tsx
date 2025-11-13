@@ -3,9 +3,9 @@ const API_URL = 'http://localhost:5000';
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   let accessToken = localStorage.getItem('accessToken');
   
-  // Requête avec le token actuel
   let response = await fetch(`${API_URL}${url}`, {
     ...options,
+    credentials: 'include',
     headers: {
       ...options.headers,
       'Authorization': `Bearer ${accessToken}`,
@@ -13,22 +13,20 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
     },
   });
 
-  // Si 401 ou 403, le token est expiré
   if (response.status === 401 || response.status === 403) {
-    const refreshToken = await refreshAccessToken();
+    const newAccessToken = await refreshAccessToken();
 
-    if (refreshToken) {
-      // Réessaye avec le nouveau token
+    if (newAccessToken) {
       response = await fetch(`${API_URL}${url}`, {
         ...options,
+        credentials: 'include',
         headers: {
           ...options.headers,
-          'Authorization': `Bearer ${refreshToken}`,
+          'Authorization': `Bearer ${newAccessToken}`,
           'Content-Type': 'application/json',
         },
       });
     } else {
-      // Impossible de refresh, déconnexion
       localStorage.clear();
       window.location.href = '/login';
       throw new Error('Session expirée');
@@ -39,19 +37,16 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
 }
 
 async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = localStorage.getItem('refreshToken');
-  if (!refreshToken) return null;
-
   try {
     const response = await fetch(`${API_URL}/api/auth/refresh`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
     });
 
     if (response.ok) {
       const { accessToken } = await response.json();
-      localStorage.setItem('token', accessToken);
+      localStorage.setItem('accessToken', accessToken);
       return accessToken;
     }
     

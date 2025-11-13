@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { CalendarService } from '../services/calendarService';
-import { HabitRepository } from '../repositories/habitRepository';
+import { HabitRepository } from '../repositories/habit.repository';
 
 const router = express.Router();
 const habitRepo = new HabitRepository();

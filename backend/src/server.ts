@@ -9,6 +9,10 @@ import habitsRoutes from './routes/habits';
 import statsRoutes from './routes/stats';
 import calendarRoutes from './routes/calendar';
 import aiRouter from './routes/ai';
+import cron from 'node-cron';
+import { sendDailyReminder } from './services/emailService';
+import { dbAll } from './config/database';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -17,8 +21,12 @@ const PORT = process.env.PORT || 5000;
 initDatabase();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -33,4 +41,19 @@ app.get('/', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+app.listen(PORT, () => {
+  // Envoie un email à 15h chaque jour
+  cron.schedule('0 15 * * *', async () => {
+    console.log('📧 Envoi des rappels...');
+    
+    const users = await dbAll('SELECT email, name FROM users') as any[];
+    
+    for (const user of users) {
+      await sendDailyReminder(user.email, user.name);
+    }
+    
+    console.log('✅ Rappels envoyés !');
+  });
 });

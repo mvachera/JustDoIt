@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 
 interface AuthContextType {
   isLoggedIn: boolean;
-  login: (accessToken: string, refreshToken: string, user: any) => void;
+  login: (accessToken: string, user: any) => void;
   logout: () => void;
   accessToken: string | null;
 }
@@ -15,27 +15,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Vérifie le token au démarrage
   useEffect(() => {
-    const accessToken = localStorage.getItem("accessToken");
-    const refreshToken = localStorage.getItem("refreshToken");
+    const token = localStorage.getItem("accessToken");
 
-    if (accessToken && refreshToken) {
-    	setAccessToken(accessToken);
-		setIsLoggedIn(true);
+    if (token) {
+      setAccessToken(token);
+      setIsLoggedIn(true);
     }
   }, []);
 
-  const login = (accessToken: string, refreshToken: string, user: any) => {
+  const login = (accessToken: string, user: any) => {
     localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", refreshToken);
     localStorage.setItem("name", user.name);
+    setAccessToken(accessToken);
     setIsLoggedIn(true);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Appelle le backend pour supprimer le cookie
+    try {
+      await fetch('http://localhost:5000/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Erreur logout:', error);
+    }
+
     localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
     localStorage.removeItem("name");
-	setAccessToken(null);
+    setAccessToken(null);
     setIsLoggedIn(false);
   };
 
