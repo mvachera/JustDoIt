@@ -123,13 +123,11 @@ const Calendar: React.FC = () => {
 	  
 	  if (dateObj <= new Date()) {
 		totalDays++;
-		let dayCompleted = false;
 
 		habits.forEach(habit => {
 		  habitStats[habit.id].total++;
 		  if (activityData[date] && activityData[date][habit.id]) {
 			habitStats[habit.id].completed++;
-			dayCompleted = true;
 		  }
 		});
 

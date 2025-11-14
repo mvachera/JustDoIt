@@ -1,0 +1,35 @@
+.PHONY: up down build logs clean test restart
+
+up:
+	@echo "🚀 Lancement de JustDoIt..."
+	docker compose up -d
+	@echo "✅ Services lancés ! Frontend: http://localhost | Backend: http://localhost:5000"
+
+down:
+	@echo "🛑 Arrêt des services..."
+	docker compose down
+
+build:
+	@echo "🔨 Rebuild des images..."
+	docker compose build --no-cache
+
+logs:
+	docker compose logs -f
+
+clean:
+	@echo "⚠️  Suppression complète"
+	docker system prune -a
+
+restart:
+	@echo "🔄 Redémarrage..."
+	docker compose restart
+
+help:
+	@echo "Commandes disponibles :"
+	@echo "  make (up)    - Lance tous les services"
+	@echo "  make down    - Arrête tous les services"
+	@echo "  make build   - Rebuild les images"
+	@echo "  make logs    - Affiche les logs"
+	@echo "  make clean   - Supprime tout"
+	@echo "  make restart - Redémarre les services"
+	@echo "  make test    - Lance les tests"
