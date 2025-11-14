@@ -37,7 +37,6 @@ export class CalendarService {
     return this.calculateStats(habits, entries, start, end);
   }
 
-  // ✅ Méthodes privées pour la logique métier
   private buildActivityMatrix(
     habitIds: number[],
     start: string,

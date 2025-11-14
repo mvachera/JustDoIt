@@ -1,6 +1,7 @@
 import { StatsRepository } from '../repositories/stats.repository';
 import { HabitRepository } from '../repositories/habit.repository';
 import { Stats, WeeklyData, HabitRate } from '../types/stats.types';
+import { WeeklyEmailStats, MonthlyEmailStats } from '../types/notifs.type'
 import { getLast7Days, getWeekDaysUntilToday } from '../utils/dateHelpers';
 
 export class StatsService {
@@ -115,5 +116,146 @@ export class StatsService {
     }
 
     return { bestHabit, worstHabit };
+  }
+
+  async getWeeklyStatsForEmail(userId: number): Promise<WeeklyEmailStats> {
+    const today = new Date();
+    const lastMonday = new Date(today);
+    lastMonday.setDate(today.getDate() - ((today.getDay() + 6) % 7) - 7);
+    const lastSunday = new Date(lastMonday);
+    lastSunday.setDate(lastMonday.getDate() + 6);
+
+    const startDate = lastMonday.toISOString().split('T')[0];
+    const endDate = lastSunday.toISOString().split('T')[0];
+
+    // Récupère les habitudes
+    const habits = await this.statsRepo.getHabitsForStreak(userId);
+
+    // Calcule les complétions pour chaque jour de la semaine dernière
+    const weekDates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(lastMonday);
+      date.setDate(lastMonday.getDate() + i);
+      weekDates.push(date.toISOString().split('T')[0]!);
+    }
+
+    // Pour chaque habitude, calcule son taux de complétion
+    const habitRates = await Promise.all(
+      habits.map(async (habit) => {
+        const completedCount = await this.statsRepo.countCompletedEntriesForDates(habit.id, weekDates);
+        const completionRate = Math.round((completedCount / 7) * 100);
+        return { name: habit.name, completionRate };
+      })
+    );
+
+    // Top 3 habitudes
+    const topHabits = habitRates
+      .sort((a, b) => b.completionRate - a.completionRate)
+      .slice(0, 3);
+
+    // Jours où au moins une habitude a été complétée
+    let completedDays = 0;
+    for (const date of weekDates) {
+      const completed = await this.statsRepo.countCompletedForDate(userId, date);
+      if (completed > 0) completedDays++;
+    }
+
+    // Taux de complétion global
+    const totalPossible = habits.length * 7;
+    const totalCompleted = habitRates.reduce((sum, h) => sum + (h.completionRate * 7 / 100), 0);
+    const completionRate = totalPossible > 0 ? Math.round((totalCompleted / totalPossible) * 100) : 0;
+
+    // Meilleur streak
+    const { longestStreak } = await this.calculateLongestStreak(userId);
+
+    return {
+      completionRate,
+      completedDays,
+      bestStreak: longestStreak,
+      topHabits
+    };
+  } 
+
+  async getMonthlyStatsForEmail(userId: number): Promise<MonthlyEmailStats> {
+    const today = new Date();
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+
+    const monthName = lastMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    const totalDaysInMonth = lastMonthEnd.getDate();
+
+    // Crée un tableau de toutes les dates du mois dernier
+    const monthDates: string[] = [];
+    for (let i = 0; i < totalDaysInMonth; i++) {
+      const date = new Date(lastMonth);
+      date.setDate(lastMonth.getDate() + i);
+      monthDates.push(date.toISOString().split('T')[0]!);
+    }
+
+    // Récupère les habitudes
+    const habits = await this.statsRepo.getHabitsForStreak(userId);
+
+    // Stats par habitude
+    const habitStats = await Promise.all(
+      habits.map(async (habit) => {
+        const completedCount = await this.statsRepo.countCompletedEntriesForDates(habit.id, monthDates);
+        const completionRate = Math.round((completedCount / totalDaysInMonth) * 100);
+        return { name: habit.name, completionRate };
+      })
+    );
+
+    const topHabits = habitStats
+      .sort((a, b) => b.completionRate - a.completionRate)
+      .slice(0, 5);
+
+    // Jours complétés
+    let completedDays = 0;
+    for (const date of monthDates) {
+      const completed = await this.statsRepo.countCompletedForDate(userId, date);
+      if (completed > 0) completedDays++;
+    }
+
+    // Taux de complétion global
+    const totalPossible = habits.length * totalDaysInMonth;
+    const totalCompleted = habitStats.reduce((sum, h) => sum + (h.completionRate * totalDaysInMonth / 100), 0);
+    const completionRate = totalPossible > 0 ? Math.round((totalCompleted / totalPossible) * 100) : 0;
+
+    // Calcul amélioration vs mois précédent
+    const twoMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+    const twoMonthsAgoEnd = new Date(today.getFullYear(), today.getMonth() - 1, 0);
+    const prevTotalDays = twoMonthsAgoEnd.getDate();
+
+    const prevMonthDates: string[] = [];
+    for (let i = 0; i < prevTotalDays; i++) {
+      const date = new Date(twoMonthsAgo);
+      date.setDate(twoMonthsAgo.getDate() + i);
+      prevMonthDates.push(date.toISOString().split('T')[0]!);
+    }
+
+    const prevHabitStats = await Promise.all(
+      habits.map(async (habit) => {
+        const completedCount = await this.statsRepo.countCompletedEntriesForDates(habit.id, prevMonthDates);
+        return (completedCount / prevTotalDays) * 100;
+      })
+    );
+
+    const prevCompletionRate = prevHabitStats.length > 0
+      ? Math.round(prevHabitStats.reduce((a, b) => a + b, 0) / prevHabitStats.length)
+      : 0;
+
+    const improvementFromLastMonth = completionRate - prevCompletionRate;
+
+    const { longestStreak } = await this.calculateLongestStreak(userId);
+
+    return {
+      totalHabits: habits.length,
+      completionRate,
+      completedDays,
+      totalDaysInMonth,
+      bestStreak: longestStreak,
+      topHabits,
+      monthName,
+      improvementFromLastMonth
+    };
   }
 }

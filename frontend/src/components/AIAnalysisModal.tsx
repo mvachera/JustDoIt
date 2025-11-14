@@ -19,6 +19,7 @@ interface AIAnalysisModalProps {
   } | null;
   isLoading: boolean;
   error: string | null;
+  remainingTime: number;
   onAnalyze: () => void;
 }
 
@@ -28,6 +29,7 @@ export default function AIAnalysisModal({
   analysis,
   isLoading,
   error,
+  remainingTime,
   onAnalyze
 }: AIAnalysisModalProps) {
   if (!isOpen) return null;
@@ -60,8 +62,13 @@ export default function AIAnalysisModal({
 
         {/* Error */}
         {error && (
-          <div className="bg-red-500/10 border border-red-500 rounded-lg p-4 mb-4">
-            <p className="text-red-400">{error}</p>
+          <div className="text-center text-red-400 mb-4">
+            <p>{error}</p>
+            {remainingTime > 0 && (
+              <p className="text-sm mt-2">
+                Temps restant : <span className="font-bold">{remainingTime}s</span>
+              </p>
+            )}
           </div>
         )}
 

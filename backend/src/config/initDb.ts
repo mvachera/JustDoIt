@@ -25,13 +25,35 @@ export function initDatabase(): void {
     }
   });
 
-  db.run(`
-    ALTER TABLE users ADD COLUMN resetPasswordToken TEXT;
-  `);
+  db.run(`ALTER TABLE users ADD COLUMN resetPasswordToken TEXT`, (err) => {
+    if (err && !err.message.includes('duplicate column name')) {
+      console.error('Erreur ajout colonne resetPasswordToken:', err);
+    }
+  });
 
-  db.run(`
-    ALTER TABLE users ADD COLUMN resetPasswordExpires INTEGER;
-  `);
+  db.run(`ALTER TABLE users ADD COLUMN resetPasswordExpires INTEGER`, (err) => {
+    if (err && !err.message.includes('duplicate column name')) {
+      console.error('Erreur ajout colonne resetPasswordExpires:', err);
+    }
+  });
+
+  db.run(`ALTER TABLE users ADD COLUMN daily_reminder_enabled INTEGER DEFAULT 1`, (err) => {
+    if (err && !err.message.includes('duplicate column name')) {
+      console.error('Erreur ajout colonne daily_reminder_enabled:', err);
+    }
+  });
+
+  db.run(`ALTER TABLE users ADD COLUMN weekly_stats_enabled INTEGER DEFAULT 1`, (err) => {
+    if (err && !err.message.includes('duplicate column name')) {
+      console.error('Erreur ajout colonne weekly_stats_enabled:', err);
+    }
+  });
+
+  db.run(`ALTER TABLE users ADD COLUMN monthly_stats_enabled INTEGER DEFAULT 1`, (err) => {
+    if (err && !err.message.includes('duplicate column name')) {
+      console.error('Erreur ajout colonne monthly_stats_enabled:', err);
+    }
+  });
 
   // Table des habitudes
   db.run(`

@@ -67,7 +67,7 @@ export default function ForgotPassword() {
           <CardContent>
             <p className="text-sm text-gray-600 mb-4">
               Cliquez sur le lien dans l'email pour réinitialiser votre mot de passe. 
-              Le lien est valide pendant 1 heure.
+              Le lien est valide pendant 5 minutes.
             </p>
             <Button 
               onClick={() => navigate('/login')}

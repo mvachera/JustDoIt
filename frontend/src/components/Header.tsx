@@ -1,21 +1,21 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, Target, BarChart3, Calendar, LogOut, Menu, X } from 'lucide-react';
+import { Home, Target, BarChart3, Calendar, LogOut, Bell } from 'lucide-react';
 import { useState } from 'react';
+import NotificationsModal from './notification/NotificationsModal';
+import { useNotifications } from '../hooks/useNotifications';
 
 interface NavLinkProps {
   to: string;
   icon: React.ComponentType<{ className?: string }>;
   children: React.ReactNode;
   isActive: boolean;
-  onClick?: () => void;
 }
 
-function NavLink({ to, icon: Icon, children, isActive, onClick }: NavLinkProps) {
+function NavLink({ to, icon: Icon, children, isActive }: NavLinkProps) {
   return (
     <Link
       to={to}
-      onClick={onClick}
       className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ${
         isActive
           ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
@@ -31,19 +31,8 @@ function NavLink({ to, icon: Icon, children, isActive, onClick }: NavLinkProps) 
 export default function Header() {
   const { logout } = useAuth();
   const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const handleLogout = () => {
-    logout();
-  };
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
+  const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
+  const { dailyReminder, weeklyStats, monthlyStats, toggleNotification } = useNotifications();
 
   const navItems = [
     { to: '/', icon: Home, label: 'Home' },
@@ -54,21 +43,22 @@ export default function Header() {
 
   return (
     <>
-      <header className="bg-gray-900 border-b border-gray-800 fixed top-0 left-0 right-0 z-50 backdrop-blur-sm bg-opacity-95">
+      {/* Header Desktop */}
+      <header className="hidden md:block bg-gray-900 border-b border-gray-800 fixed top-0 left-0 right-0 z-50 backdrop-blur-sm bg-opacity-95">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <div className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-purple-800 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">J</span>
               </div>
               <h1 className="text-xl font-bold text-white">
                 Just<span className="text-purple-500">DoIt</span>
               </h1>
-            </div>
+            </Link>
 
-            {/* Navigation Desktop */}
-            <nav className="hidden md:flex items-center gap-2">
+            {/* Navigation */}
+            <nav className="flex items-center gap-2">
               {navItems.map((item) => (
                 <NavLink
                   key={item.to}
@@ -81,66 +71,78 @@ export default function Header() {
               ))}
             </nav>
 
-            {/* Actions Desktop */}
-            <div className="hidden md:flex items-center gap-3">
+            {/* Actions */}
+            <div className="flex items-center gap-3">
               <button
-                onClick={handleLogout}
+                onClick={() => setIsNotifModalOpen(true)}
+                className="bg-gray-800 hover:bg-purple-600 text-gray-300 hover:text-white p-2 rounded-lg transition-all duration-300"
+                title="Notifications"
+              >
+                <Bell className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={logout}
                 className="flex items-center gap-2 bg-gray-800 hover:bg-red-600 text-gray-300 hover:text-white px-4 py-2 rounded-lg transition-all duration-300 group"
               >
                 <LogOut className="w-4 h-4 group-hover:rotate-12 transition-transform" />
                 <span className="font-medium">Déconnexion</span>
               </button>
             </div>
-
-            {/* Mobile Menu Button */}
-            <button
-              onClick={toggleMobileMenu}
-              className="md:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
-              aria-label="Toggle menu"
-            >
-              {isMobileMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
           </div>
         </div>
       </header>
 
-      {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-black bg-opacity-50 backdrop-blur-sm" onClick={closeMobileMenu}>
-          <div
-            className="fixed top-16 left-0 right-0 bg-gray-900 border-b border-gray-800 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <nav className="px-4 py-6 space-y-2">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  icon={item.icon}
-                  isActive={location.pathname === item.to}
-                  onClick={closeMobileMenu}
-                >
-                  {item.label}
-                </NavLink>
-              ))}
-              <button
-                onClick={() => {
-                  handleLogout();
-                  closeMobileMenu();
-                }}
-                className="w-full flex items-center gap-2 bg-gray-800 hover:bg-red-600 text-gray-300 hover:text-white px-4 py-2 rounded-lg transition-all duration-300 mt-4"
+      {/* Navigation Mobile */}
+      <nav className="md:hidden fixed top-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-50 backdrop-blur-sm bg-opacity-95">
+        <div className="flex items-center justify-around h-16 px-2">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.to;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all ${
+                  isActive ? 'text-purple-500' : 'text-gray-400'
+                }`}
+                title={item.label}
               >
-                <LogOut className="w-4 h-4" />
-                <span className="font-medium">Déconnexion</span>
-              </button>
-            </nav>
-          </div>
+                <Icon className="w-5 h-5" />
+                <span className="text-xs font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
+          
+          <button
+            onClick={() => setIsNotifModalOpen(true)}
+            className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg text-gray-400 transition-all"
+            title="Notifications"
+          >
+            <Bell className="w-5 h-5" />
+            <span className="text-xs font-medium">Notifs</span>
+          </button>
+
+          <button
+            onClick={logout}
+            className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg text-gray-400 transition-all"
+            title="Déconnexion"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="text-xs font-medium">Sortir</span>
+          </button>
         </div>
-      )}
+      </nav>
+
+      {/* Modal Notifications */}
+      <NotificationsModal
+        isOpen={isNotifModalOpen}
+        onClose={() => setIsNotifModalOpen(false)}
+        dailyReminder={dailyReminder}
+        weeklyStats={weeklyStats}
+        monthlyStats={monthlyStats}
+        onToggle={toggleNotification}
+      />
     </>
   );
 }

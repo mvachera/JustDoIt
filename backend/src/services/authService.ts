@@ -90,7 +90,7 @@ export const generateResetToken = async (email: string) => {
   }
 
   const resetToken = crypto.randomBytes(32).toString('hex');
-  const resetTokenExpires = Date.now() + 3600000; // 1 heure
+  const resetTokenExpires = Date.now() + (5 * 60 * 1000); // 5 minutes
 
   await updateResetToken(user.id, resetToken, resetTokenExpires);
 

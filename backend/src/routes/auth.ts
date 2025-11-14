@@ -8,7 +8,7 @@ import {
   removeUserPassword 
 } from '../services/authService';
 import { updateRefreshToken } from '../repositories/auth.repository';
-import { sendResetEmail } from '../config/email';
+import { sendResetEmail } from '../services/emailService';
 import { generateResetToken, resetPassword } from '../services/authService';
 
 const router = express.Router();

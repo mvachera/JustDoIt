@@ -8,9 +8,11 @@ import authRoutes from './routes/auth';
 import habitsRoutes from './routes/habits';
 import statsRoutes from './routes/stats';
 import calendarRoutes from './routes/calendar';
+import notifsRoutes from './routes/notifs';
 import aiRouter from './routes/ai';
 import cron from 'node-cron';
-import { sendDailyReminder } from './services/emailService';
+import { sendDailyReminder, sendWeeklyStats, sendMonthlyStats } from './services/emailService';
+import { StatsService,  } from './services/statsService'
 import { dbAll } from './config/database';
 import cookieParser from 'cookie-parser';
 
@@ -33,6 +35,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/habits', habitsRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/notifs', notifsRoutes);
 app.use('/api/ai', aiRouter);
 
 app.get('/', (req, res) => {
@@ -41,19 +44,59 @@ app.get('/', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-});
 
-app.listen(PORT, () => {
-  // Envoie un email à 15h chaque jour
-  cron.schedule('0 15 * * *', async () => {
-    console.log('📧 Envoi des rappels...');
-    
-    const users = await dbAll('SELECT email, name FROM users') as any[];
+  // 📧 Rappel quotidien à 10h
+  cron.schedule('0 10 * * *', async () => {
+    console.log('📧 Envoi des rappels quotidiens...');
+    const users = await dbAll(
+      'SELECT email, name FROM users WHERE daily_reminder_enabled = 1'
+    ) as any[];
     
     for (const user of users) {
-      await sendDailyReminder(user.email, user.name);
+      try {
+        await sendDailyReminder(user.email, user.name);
+      } catch (error) {
+        console.error(`Erreur rappel pour ${user.email}:`, error);
+      }
     }
+    console.log(`✅ ${users.length} rappels quotidiens envoyés !`);
+  });
+
+  // 📊 Stats hebdo tous les lundis à 10h
+  cron.schedule('0 10 * * 1', async () => {
+    console.log('📊 Envoi des stats hebdomadaires...');
+    const users = await dbAll(
+      'SELECT id, email, name FROM users WHERE weekly_stats_enabled = 1'
+    ) as any[];
+    const statsService = new StatsService();
     
-    console.log('✅ Rappels envoyés !');
+    for (const user of users) {
+      try {
+        const stats = await statsService.getWeeklyStatsForEmail(user.id);
+        await sendWeeklyStats(user.email, user.name, stats);
+      } catch (error) {
+        console.error(`Erreur stats hebdo pour ${user.email}:`, error);
+      }
+    }
+    console.log(`✅ ${users.length} stats hebdo envoyées !`);
+  });
+
+  // 📅 Stats mensuelles le 1er du mois à 11h
+  cron.schedule('0 11 1 * *', async () => {
+    console.log('📅 Envoi des stats mensuelles...');
+    const users = await dbAll(
+      'SELECT id, email, name FROM users WHERE monthly_stats_enabled = 1'
+    ) as any[];
+    const statsService = new StatsService();
+    
+    for (const user of users) {
+      try {
+        const stats = await statsService.getMonthlyStatsForEmail(user.id);
+        await sendMonthlyStats(user.email, user.name, stats);
+      } catch (error) {
+        console.error(`Erreur stats mensuelles pour ${user.email}:`, error);
+      }
+    }
+    console.log(`✅ ${users.length} stats mensuelles envoyées !`);
   });
 });
