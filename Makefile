@@ -3,7 +3,12 @@
 up:
 	@echo "🚀 Lancement de JustDoIt..."
 	docker compose up -d
-	@echo "✅ Services lancés ! Frontend: http://localhost | Backend: http://localhost:5000"
+	@echo "✅ Services lancés ! Frontend: http://localhost:8080 | Backend: http://localhost:5000"
+
+dev:
+	@echo "🔧 Mode développement (Backend Docker + Frontend local)"
+	@docker compose up backend & cd frontend && npm run dev
+	@echo "✅ Services lancés ! Frontend: http://localhost:5173 | Backend: http://localhost:5000"
 
 down:
 	@echo "🛑 Arrêt des services..."
@@ -17,8 +22,9 @@ logs:
 	docker compose logs -f
 
 clean:
-	@echo "⚠️  Suppression complète"
-	docker system prune -a
+	@echo "⚠️  Suppression complète des services..."
+	docker compose down --rmi all --remove-orphans
+	docker system prune -a -f
 
 restart:
 	@echo "🔄 Redémarrage..."

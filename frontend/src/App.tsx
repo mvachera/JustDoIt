@@ -12,7 +12,13 @@ import Habits from "./pages/Habits";
 import Calendar from "./pages/Calendar";
 
 function App() {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-black flex items-center justify-center">
+      <p className="text-white">Chargement...</p>
+    </div>;
+  }
 
   return (
     <Router>
@@ -24,8 +30,6 @@ function App() {
             <Route path="/register" element={<RegisterForm />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            {/* Si user non loggé et tente d’aller ailleurs → redirigé vers login */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
           </>
         )}
 
@@ -33,13 +37,15 @@ function App() {
         {isLoggedIn && (
           <>
             <Route path="/" element={<Home />} />
-            <Route path="/Habits" element={<Habits />} />
-            <Route path="/Stats" element={<Stats />} />
-            <Route path="/Calendar" element={<Calendar />} />
-            {/* Si user loggé et tente /login → redirigé vers home */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/habits" element={<Habits />} />
+            <Route path="/stats" element={<Stats />} />
+            <Route path="/calendar" element={<Calendar />} />
           </>
         )}
+
+        {/* Catch-all en dehors */}
+        <Route path="*"
+        element={<Navigate to={isLoggedIn ? "/" : "/login"} replace />} />
       </Routes>
       <Toaster />
     </Router>

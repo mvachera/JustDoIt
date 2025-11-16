@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 
 interface AuthContextType {
   isLoggedIn: boolean;
+  isLoading: boolean;
   login: (accessToken: string, user: any) => void;
   logout: () => void;
   accessToken: string | null;
@@ -11,6 +12,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   // Vérifie le token au démarrage
@@ -21,6 +23,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAccessToken(token);
       setIsLoggedIn(true);
     }
+    
+    setIsLoading(false);
   }, []);
 
   const login = (accessToken: string, user: any) => {
@@ -31,7 +35,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    // Appelle le backend pour supprimer le cookie
     try {
       await fetch('http://localhost:5000/api/auth/logout', {
         method: 'POST',
@@ -48,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, login, logout, accessToken }}>
+    <AuthContext.Provider value={{ isLoggedIn, isLoading, login, logout, accessToken }}>
       {children}
     </AuthContext.Provider>
   );

@@ -4,10 +4,11 @@ import { useAIAnalysis } from '../hooks/useAIAnalysis';
 import AIAnalysisModal from '../components/AIAnalysisModal';
 import HeroSection from '../components/home/HeroSection';
 import MissionSection from '../components/home/MissionSection';
-import FeatureCards from '../components/home/FeatureCards';
-import BenefitsSection from '../components/home/BenefitsSection';
+// import FeatureCards from '../components/home/FeatureCards';
+// import BenefitsSection from '../components/home/BenefitsSection';
 import AISection from '../components/home/AISection';
-import CTASection from '../components/home/CTASection';
+import QuickAccessCards from '../components/home/QuickAccessCards';
+// import CTASection from '../components/home/CTASection';
 
 export default function Home() {
   const [name, setName] = useState('');
@@ -29,10 +30,11 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
         <HeroSection name={name} />
         <MissionSection />
-        <FeatureCards />
-        <BenefitsSection />
+        {/* <FeatureCards /> */}
+        {/* <BenefitsSection /> */}
         <AISection onOpenModal={() => setIsAIModalOpen(true)} />
-        <CTASection />
+        <QuickAccessCards />
+        {/* <CTASection /> */}
       </main>
 
       <AIAnalysisModal
