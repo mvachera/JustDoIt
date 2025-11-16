@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000';
+const API_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5000';
 
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   let accessToken = localStorage.getItem('accessToken');
