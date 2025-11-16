@@ -19,8 +19,20 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET) as { userId: number };
     req.userId = decoded.userId;
     next();
-  } catch (error) {
-    console.error('Erreur vérification token:', error);
-    return res.status(403).json({ error: 'Token invalide' });
+  } catch (error: any) {
+    // Token expiré = comportement NORMAL, pas une erreur
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expiré' });
+    }
+    
+    // Vraies erreurs = logger
+    if (error.name === 'JsonWebTokenError') {
+      console.error('Token JWT invalide:', error.message);
+      return res.status(403).json({ error: 'Token invalide' });
+    }
+    
+    // Autres erreurs inattendues
+    console.error('Erreur inattendue vérification token:', error);
+    return res.status(403).json({ error: 'Erreur authentification' });
   }
 };
