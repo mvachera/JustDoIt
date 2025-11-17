@@ -3,6 +3,7 @@
 # ================================
 FROM node:20-alpine AS builder
 
+# Définir le dossier de travail dans le container
 WORKDIR /app
 
 # Copier les fichiers de dépendances
@@ -30,6 +31,11 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Exposer le port 80
-EXPOSE 80
+EXPOSE 8080
+
+# Healthcheck pour vérifier que Nginx fonctionne
+# Essaie de télécharger la page d'accueil toutes les 30s
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
 
 # Nginx démarre automatiquement (pas besoin de CMD)

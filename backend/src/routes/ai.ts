@@ -1,6 +1,6 @@
 import express from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
-import { dbAll } from '../config/database';
+import { query } from '../config/database';
 import { getWeekDaysUntilToday } from '../utils/dateHelpers';
 import { HabitRepository } from '../repositories/habit.repository';
 
@@ -8,6 +8,15 @@ const router = express.Router();
 
 interface ClaudeResponse {
   content: Array<{ text: string; type: string }>;
+}
+
+interface HabitRaw {
+  id: number;
+  name: string;
+  category: string;
+  difficulty: number;
+  best_streak: number;
+  completed_this_week: number;
 }
 
 router.post('/analyze', authenticateToken, async (req: AuthRequest, res) => {
@@ -28,48 +37,48 @@ router.post('/analyze', authenticateToken, async (req: AuthRequest, res) => {
 	}
 
 	const totalDaysThisWeek = weekDays.length;
-	const placeholders = weekDays.map(() => '?').join(',');
+	const placeholders = weekDays.map((_, i) => `$${i + 1}`).join(',');
 
-	const habitsRaw = await dbAll(
-	  `SELECT 
-	    h.id,
-	    h.name,
-	    h.category,
-	    h.difficulty,
-	    h.best_streak,
-	    COUNT(CASE WHEN he.completed = 1 AND he.date IN (${placeholders}) THEN 1 END) as completed_this_week
-	  FROM habits h
-	  LEFT JOIN habit_entries he ON h.id = he.habit_id
-	  WHERE h.user_id = ?
-	  GROUP BY h.id`,
-	  [...weekDays, userId]
-	) as any[];
+  const habitsRaw = await query(
+    `SELECT 
+      h.id,
+      h.name,
+      h.category,
+      h.difficulty,
+      h.best_streak,
+      COUNT(CASE WHEN he.completed = true AND he.date IN (${placeholders}) THEN 1 END) as completed_this_week
+    FROM habits h
+    LEFT JOIN habit_entries he ON h.id = he.habit_id
+    WHERE h.user_id = $${weekDays.length + 1}
+    GROUP BY h.id`,
+    [...weekDays, userId]
+  );
 
-    // Calcule les vrais streaks et le taux de la semaine en cours
-    const habits = await Promise.all(
-      habitsRaw.map(async (h) => {
-        const streak = await habitRepo.calculateStreak(h.id);
-        const completionRate = totalDaysThisWeek > 0 
-          ? Math.round((h.completed_this_week / totalDaysThisWeek) * 100)
-          : 0;
-        
-        return {
-          ...h,
-          streak,
-          completed_last_week: h.completed_this_week,
-          completionRate
-        };
-      })
-    );
+  // Calcule les vrais streaks et le taux de la semaine en cours
+  const habits = await Promise.all(
+    habitsRaw.map(async (h: HabitRaw) => {
+      const streak = await habitRepo.calculateStreak(h.id);
+      const completionRate = totalDaysThisWeek > 0 
+        ? Math.round((h.completed_this_week / totalDaysThisWeek) * 100)
+        : 0;
+      
+      return {
+        ...h,
+        streak,
+        completed_last_week: h.completed_this_week,
+        completionRate
+      };
+    })
+  );
 
-    if (habits.length === 0) {
-      return res.status(400).json({ 
-        error: 'Vous devez avoir au moins une habitude pour obtenir une analyse' 
-      });
-    }
+  if (habits.length === 0) {
+    return res.status(400).json({ 
+      error: 'Vous devez avoir au moins une habitude pour obtenir une analyse' 
+    });
+  }
 
-    // Appel à l'API Claude
-    const analysis = await analyzeHabitsWithAI(habits);
+  // Appel à l'API Claude
+  const analysis = await analyzeHabitsWithAI(habits);
 
     res.json(analysis);
   } catch (error) {

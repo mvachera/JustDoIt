@@ -1,5 +1,3 @@
-import { dbAll } from '../config/database';
-
 // Fonction helper pour obtenir les 7 jours de la semaine courante (L-D)
 export function getLast7Days(): string[] {
   const dates: string[] = [];

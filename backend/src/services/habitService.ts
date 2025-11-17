@@ -15,7 +15,7 @@ export class HabitService {
         const entries = await this.habitRepo.getEntriesForDates(habit.id, weekDates);
 
         const entriesMap = new Map(
-          entries.map(e => [e.date, e.completed === 1])
+          entries.map(e => [e.date, !!e.completed])
         );
 
         const weekData = weekDates.map(date => entriesMap.get(date) || false);
@@ -82,17 +82,17 @@ export class HabitService {
     const today = new Date().toISOString().split('T')[0]!;
     const existingEntry = await this.habitRepo.getEntryForDate(habitId, today);
 
-    let newStatus: number;
+    let newStatus: boolean;
 
     if (existingEntry) {
-      newStatus = existingEntry.completed === 1 ? 0 : 1;
-      await this.habitRepo.updateEntry(existingEntry.id, newStatus);
+      newStatus = !existingEntry.completed;
+      await this.habitRepo.updateEntry(existingEntry.id, newStatus ? 1 : 0);
     } else {
       await this.habitRepo.createEntry(habitId, today, 1);
-      newStatus = 1;
+      newStatus = true;
     }
 
-    if (newStatus === 1) {
+    if (newStatus) {
       const currentStreak = await this.habitRepo.calculateStreak(habitId);
       
       if (currentStreak > habit.best_streak) {
@@ -101,8 +101,8 @@ export class HabitService {
     }
 
     return {
-      completed: newStatus === 1,
-      message: newStatus === 1 
+      completed: newStatus,
+      message: newStatus 
         ? 'Habitude marquée comme complétée' 
         : 'Habitude marquée comme non complétée'
     };

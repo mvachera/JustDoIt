@@ -1,44 +1,26 @@
-import sqlite3 from 'sqlite3';
-import path from 'path';
+import { Pool } from 'pg';
 
-// Le fichier de base de données sera dans backend/database.db
-const dbPath = path.join(__dirname, '..', '..', 'database.db');
-
-// Crée/connecte à la base de données
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('❌ Erreur connexion SQLite:', err.message);
-  } else {
-    console.log('✅ Connecté à SQLite');
-  }
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
 });
 
-// Promisify les méthodes SQLite pour utiliser async/await
-export const dbRun = (sql: string, params?: any[]): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params || [], function(err) {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
+pool.on('connect', () => {
+  console.log('✅ Connecté à PostgreSQL');
+});
+
+pool.on('error', (err: Error) => {
+  console.error('❌ Erreur PostgreSQL:', err);
+});
+
+export const query = async (text: string, params?: any[]): Promise<any> => {
+  const result = await pool.query(text, params);
+  return result.rows;
 };
 
-export const dbGet = (sql: string, params?: any[]): Promise<any> => {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params || [], (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
+export const queryOne = async (text: string, params?: any[]): Promise<any> => {
+  const result = await pool.query(text, params);
+  return result.rows[0];
 };
 
-export const dbAll = (sql: string, params?: any[]): Promise<any[]> => {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params || [], (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
-};
-
-export default db;
+export default pool;

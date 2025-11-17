@@ -11,7 +11,7 @@ vi.mock('../middleware/auth', () => ({
 }));
 
 import habitsRouter from './habits';
-import { dbRun, dbGet } from '../config/database';
+import { query, queryOne } from '../config/database';
 
 const app = express();
 app.use(express.json());
@@ -22,7 +22,7 @@ const testUserId = 999;
 describe('POST /api/habits - Test d\'intégration', () => {
   
   beforeEach(async () => {
-    await dbRun('DELETE FROM habits WHERE user_id = ?', [testUserId]);
+    await query('DELETE FROM habits WHERE user_id = $1', [testUserId]);
   });
 
   it('crée une habitude et la sauvegarde en BDD', async () => {
@@ -38,8 +38,8 @@ describe('POST /api/habits - Test d\'intégration', () => {
     expect(response.status).toBe(201);
     expect(response.body.name).toBe('Sport');
 
-    const habit = await dbGet(
-      'SELECT * FROM habits WHERE user_id = ? AND name = ?',
+    const habit = await queryOne(
+      'SELECT * FROM habits WHERE user_id = $1 AND name = $2',
       [testUserId, 'Sport']
     );
     
@@ -89,6 +89,6 @@ describe('POST /api/habits - Test d\'intégration', () => {
   });
 
   afterAll(async () => {
-    await dbRun('DELETE FROM habits WHERE user_id = ?', [testUserId]);
+    await query('DELETE FROM habits WHERE user_id = $1', [testUserId]);
   });
 });

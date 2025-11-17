@@ -13,7 +13,7 @@ import aiRouter from './routes/ai';
 import cron from 'node-cron';
 import { sendDailyReminder, sendWeeklyStats, sendMonthlyStats } from './services/emailService';
 import { StatsService,  } from './services/statsService'
-import { dbAll } from './config/database';
+import { query } from './config/database';
 import cookieParser from 'cookie-parser';
 
 const app = express();
@@ -52,7 +52,7 @@ app.listen(PORT, () => {
   // 📧 Rappel quotidien à 10h
   cron.schedule('0 10 * * *', async () => {
     console.log('📧 Envoi des rappels quotidiens...');
-    const users = await dbAll(
+    const users = await query(
       'SELECT email, name FROM users WHERE daily_reminder_enabled = 1'
     ) as any[];
     
@@ -69,7 +69,7 @@ app.listen(PORT, () => {
   // 📊 Stats hebdo tous les lundis à 10h
   cron.schedule('0 10 * * 1', async () => {
     console.log('📊 Envoi des stats hebdomadaires...');
-    const users = await dbAll(
+    const users = await query(
       'SELECT id, email, name FROM users WHERE weekly_stats_enabled = 1'
     ) as any[];
     const statsService = new StatsService();
@@ -88,7 +88,7 @@ app.listen(PORT, () => {
   // 📅 Stats mensuelles le 1er du mois à 11h
   cron.schedule('0 11 1 * *', async () => {
     console.log('📅 Envoi des stats mensuelles...');
-    const users = await dbAll(
+    const users = await query(
       'SELECT id, email, name FROM users WHERE monthly_stats_enabled = 1'
     ) as any[];
     const statsService = new StatsService();

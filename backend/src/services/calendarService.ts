@@ -62,7 +62,7 @@ export class CalendarService {
 
     // Remplir avec les vraies données
     entries.forEach(entry => {
-      if (activityData[entry.date] && entry.completed === 1) {
+      if (activityData[entry.date] && !!entry.completed) {
         activityData[entry.date]![entry.habit_id] = true;
       }
     });
@@ -98,7 +98,7 @@ export class CalendarService {
     // Compter les complétions
     let totalCompletions = 0;
     entries.forEach(entry => {
-      if (entry.completed === 1) {
+      if (!!entry.completed) {
         habitStats[entry.habit_id]!.completed++;
         totalCompletions++;
       }
