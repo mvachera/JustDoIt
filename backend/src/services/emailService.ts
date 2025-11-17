@@ -10,6 +10,9 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// URL dynamique selon l'environnement
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
 // === HELPERS POUR LES TEMPLATES === 
 
 const getEmailStyle = () => `
@@ -45,7 +48,7 @@ const dailyReminderTemplate = (name: string) => `
   <div style="${getEmailStyle()}">
     <h2>Salut ${name} ! 👋</h2>
     <p>C'est l'heure de valider tes habitudes du jour.</p>
-    <a href="http://localhost:5173/habits" style="${getButtonStyle()}">
+    <a href="${FRONTEND_URL}/habits" style="${getButtonStyle()}">
       Voir mes habitudes
     </a>
   </div>
@@ -88,7 +91,7 @@ const weeklyStatsTemplate = (name: string, stats: WeeklyStats) => {
 
       <div style="margin-top: 30px; text-align: center;">
         <p style="font-size: 18px;">${message}</p>
-        <a href="http://localhost:5173/habits" style="${getButtonStyle()}">
+        <a href="${FRONTEND_URL}/habits" style="${getButtonStyle()}">
           Voir mes habitudes
         </a>
       </div>
@@ -139,7 +142,7 @@ const monthlyStatsTemplate = (name: string, stats: MonthlyStats) => {
       ` : ''}
 
       <div style="text-align: center; margin-top: 30px;">
-        <a href="http://localhost:5173/stats" style="${getButtonStyle()}">
+        <a href="${FRONTEND_URL}/stats" style="${getButtonStyle()}">
           Voir toutes mes stats
         </a>
       </div>
@@ -150,7 +153,7 @@ const monthlyStatsTemplate = (name: string, stats: MonthlyStats) => {
 // === FONCTIONS D'ENVOI ===
 
 export const sendResetEmail = async (email: string, name: string, resetToken: string) => {
-  const resetUrl = `http://localhost:5173/reset-password?token=${resetToken}`;
+  const resetUrl = `${FRONTEND_URL}/reset-password?token=${resetToken}`;
   
   await transporter.sendMail({
     from: process.env.EMAIL_USER,
