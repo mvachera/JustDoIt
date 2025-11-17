@@ -27,8 +27,6 @@ jobs:
         
       - name: Build
         working-directory: ./frontend
-        env:
-          VITE_API_URL: https://justdoit-production-059c.up.railway.app
         run: npm run build
         
       - name: Upload artifact
