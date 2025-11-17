@@ -1,6 +1,4 @@
-const API_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:5000'
-  : 'https://justdoit-production-059c.up.railway.app';
+const API_URL = import.meta.env.VITE_API_URL;
 
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   let accessToken = localStorage.getItem('accessToken');
