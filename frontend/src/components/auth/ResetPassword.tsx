@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { API_URL } from '@/utils/api';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -50,7 +51,7 @@ export default function ResetPassword() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/reset-password', {
+      const response = await fetch(`${API_URL}/api/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

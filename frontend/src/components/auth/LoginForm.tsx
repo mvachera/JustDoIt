@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from "react-router-dom";
+import { API_URL } from '@/utils/api';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -20,7 +21,7 @@ export default function LoginForm() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

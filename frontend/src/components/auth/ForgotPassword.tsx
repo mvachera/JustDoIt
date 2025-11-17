@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { API_URL } from '@/utils/api';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -19,7 +20,7 @@ export default function ForgotPassword() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+      const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

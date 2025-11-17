@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from "react-router-dom";
+import { API_URL } from '@/utils/api';
 
 export default function RegisterForm() {
   const [name, setName] = useState('');
@@ -32,7 +33,7 @@ export default function RegisterForm() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
