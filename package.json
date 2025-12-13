@@ -4,8 +4,5 @@
     "@testing-library/react": "^16.3.0",
     "jsdom": "^27.1.0",
     "vitest": "^4.0.8"
-  },
-  "dependencies": {
-    "resend": "^6.6.0"
   }
 }
