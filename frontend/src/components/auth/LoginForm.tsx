@@ -28,7 +28,7 @@ export default function LoginForm() {
         },
         body: JSON.stringify({ email, password }),
       });
-
+console.log(API_URL);
       const data = await response.json();
       if (response.ok) {
         console.log('Connexion réussie!', data);
