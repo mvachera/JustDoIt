@@ -1,17 +1,6 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-export const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-  connectionTimeout: 60000,   // ← Ajoute ça : 60 secondes
-  greetingTimeout: 30000,     // ← Et ça : 30 secondes
-  socketTimeout: 60000,       // ← Et ça : 60 secondes
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // URL dynamique selon l'environnement
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -158,8 +147,8 @@ const monthlyStatsTemplate = (name: string, stats: MonthlyStats) => {
 export const sendResetEmail = async (email: string, name: string, resetToken: string) => {
   const resetUrl = `${FRONTEND_URL}/reset-password?token=${resetToken}`;
   
-  await transporter.sendMail({
-    from: process.env.EMAIL_USER,
+  await resend.emails.send({
+    from: 'JustDoIt <onboarding@resend.dev>',
     to: email,
     subject: 'Réinitialisation de votre mot de passe',
     html: resetPasswordTemplate(name, resetUrl),
@@ -167,8 +156,8 @@ export const sendResetEmail = async (email: string, name: string, resetToken: st
 };
 
 export const sendDailyReminder = async (email: string, name: string) => {
-  await transporter.sendMail({
-    from: process.env.EMAIL_USER,
+  await resend.emails.send({
+    from: 'JustDoIt <onboarding@resend.dev>',
     to: email,
     subject: `${name}, n'oublie pas tes habitudes ! 💪`,
     html: dailyReminderTemplate(name),
@@ -178,8 +167,8 @@ export const sendDailyReminder = async (email: string, name: string) => {
 export const sendWeeklyStats = async (email: string, name: string, stats: WeeklyStats) => {
   const emoji = stats.completionRate >= 80 ? '🔥' : stats.completionRate >= 60 ? '💪' : '📈';
   
-  await transporter.sendMail({
-    from: process.env.EMAIL_USER,
+  await resend.emails.send({
+    from: 'JustDoIt <onboarding@resend.dev>',
     to: email,
     subject: `${name}, ton récap hebdo est là ! ${emoji}`,
     html: weeklyStatsTemplate(name, stats),
@@ -189,8 +178,8 @@ export const sendWeeklyStats = async (email: string, name: string, stats: Weekly
 export const sendMonthlyStats = async (email: string, name: string, stats: MonthlyStats) => {
   const emoji = stats.completionRate >= 80 ? '🏆' : stats.completionRate >= 60 ? '⭐' : '🌟';
   
-  await transporter.sendMail({
-    from: process.env.EMAIL_USER,
+  await resend.emails.send({
+    from: 'JustDoIt <onboarding@resend.dev>',
     to: email,
     subject: `${name}, ton bilan de ${stats.monthName} ${emoji}`,
     html: monthlyStatsTemplate(name, stats),
