@@ -102,4 +102,18 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+import { transporter } from '../services/emailService';
+
+router.get('/test-email', async (req, res) => {
+  try {
+    console.log('Test de connexion SMTP...');
+    await transporter.verify();
+    console.log('✅ Connexion SMTP OK');
+    res.json({ success: true, message: 'SMTP fonctionne' });
+  } catch (error: any) {
+    console.error('❌ Erreur SMTP:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;

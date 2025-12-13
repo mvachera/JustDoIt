@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 
-const transporter = nodemailer.createTransport({
+export const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.EMAIL_PORT || '587'),
   secure: false,
@@ -8,6 +8,9 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
   },
+  connectionTimeout: 60000,   // ← Ajoute ça : 60 secondes
+  greetingTimeout: 30000,     // ← Et ça : 30 secondes
+  socketTimeout: 60000,       // ← Et ça : 60 secondes
 });
 
 // URL dynamique selon l'environnement
