@@ -55,7 +55,7 @@ export default function NotificationsModal({
                 📧 Rappel quotidien
               </Label>
               <p className="text-gray-400 text-sm mt-1">
-                Chaque jour à 10h
+                Chaque jour à 9h
               </p>
             </div>
             <Switch

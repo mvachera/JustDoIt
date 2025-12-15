@@ -49,8 +49,8 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 
-  // 📧 Rappel quotidien à 10h
-  cron.schedule('0 10 * * *', async () => {
+  // 📧 Rappel quotidien à 9h
+  cron.schedule('0 9 * * *', async () => {
     console.log('📧 Envoi des rappels quotidiens...');
     const users = await query(
       'SELECT email, name FROM users WHERE daily_reminder_enabled = 1'
